@@ -1,0 +1,3 @@
+/* Moved. The Tailwind v4 entry (tokens → utilities, base layer) lives at:
+     next-monorepo/packages/ui/src/styles/globals.css
+   Apps import it as "@workspace/ui/globals.css". */
