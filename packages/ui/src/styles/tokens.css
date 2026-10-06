@@ -1,0 +1,228 @@
+/* Stampd · tokens v0.3 · light + dark both ship and are QA'd
+   Rule: every theme-dependent token holds a literal value in BOTH :root and .dark
+   (no var-to-var chains), so .dark works on <html> or on any subtree. */
+:root {
+  /* ── colour · surfaces & text ── */
+  --background:#F7F3EE;  --foreground:#111111;
+  --card:#FFFDF9;        --card-foreground:#111111;
+  --popover:#FFFDF9;     --popover-foreground:#111111;
+  --muted:#EFE8DF;       --muted-foreground:#6B6258;   /* 5.41:1 on bg */
+  --subtle-foreground:#4A433B;                          /* secondary body text, 8.81:1 on bg */
+  --accent:#EFE8DF;      --accent-strong:#E2D9CC;       --accent-foreground:#111111;
+
+  /* ── colour · actions ── */
+  --primary:#111111;     --primary-hover:#2A2622;       --primary-foreground:#FFFDF9;
+  --secondary:#EFE8DF;   --secondary-hover:#E2D9CC;     --secondary-foreground:#111111;
+  --destructive:#B42318; --destructive-hover:#8F1C13;   --destructive-foreground:#FFFDF9;
+  --brand:#F9DC5C;       --brand-hover:#E8C53A;         --brand-foreground:#111111;
+  --brand-subtle:#FDF3C4;
+  --inverse:#111111;     --inverse-foreground:#FFFDF9;  --inverse-muted:#B3A99B; --inverse-border:#857B6E;
+  --disabled:#EFE8DF;    --disabled-foreground:#8F8577; --disabled-border:#E2D9CC; /* 2.98 · WCAG 1.4.3 exempts disabled controls */
+
+  /* ── colour · lines & focus ── */
+  --border:#E2D9CC;         /* hairline dividers, decorative */
+  --input:#8F8577;          /* control borders, 3.28:1 */
+  --input-hover:#4A433B;
+  --border-strong:#111111;  /* hero outlines, butter edges */
+  --ring:#111111;
+  --scrim:rgb(17 17 17 / 0.48);
+  --tenant-accent:#F9DC5C;  /* per-tenant override, validated ≥3:1 vs both backgrounds */
+
+  /* ── colour · status (fg / bg) ── */
+  --status-present:#1B6E45;   --status-present-bg:#DDF3E6;
+  --status-late:#B8400A;      --status-late-bg:#FFE4D0;
+  --status-absent:#C0262D;    --status-absent-bg:#FBE0E0;
+  --status-wfh:#1D5FD1;       --status-wfh-bg:#DEE8FB;
+  --status-leave:#7038C4;     --status-leave-bg:#ECE2FB;
+  --status-trip:#0F7480;      --status-trip-bg:#D8F1F3;
+  --status-holiday:#B0306E;   --status-holiday-bg:#FADDEB;
+  --status-missing:#8A5A00;   --status-missing-bg:#FBEBC0;
+  --status-pending:#8A6100;   --status-pending-bg:#FBF0CC;
+  --status-approved:#1B6E45;  --status-approved-bg:#DDF3E6;
+  --status-rejected:#C0262D;  --status-rejected-bg:#FBE0E0;
+  --status-cancelled:#5E5850; --status-cancelled-bg:#ECE7E0;
+  --status-withdrawn:#5E5850; --status-withdrawn-bg:#ECE7E0;       /* 5.71 · icon undo-2 */
+  --status-cancel-requested:#8A6100; --status-cancel-requested-bg:#FBF0CC; /* 4.86 · dashed = needs action */
+  --status-not-yet:#6B6258;   --status-not-yet-bg:#EFE8DF;         /* 4.92 · before end-of-day close */
+  --status-out:#4A433B;       --status-out-bg:#EFE8DF;             /* 8.01 · availability without type */
+
+  /* ── colour · feedback ── */
+  --success:#1B6E45; --success-bg:#DDF3E6;
+  --warning:#8A5A00; --warning-bg:#FBEBC0;
+  --error:#B42318;   --error-bg:#FBE0E0;
+  --info:#1D5FD1;    --info-bg:#DEE8FB;
+
+  /* ── colour · categories = request types (pastel fill, ink text + ink outline)
+        pair rule: min ΔE00 ≥ 11 vs every status shown beside it; ≥ 13 vs each other */
+  --cat-leave:#FFD3B0;       /* peach  · ink 13.66 */
+  --cat-wfh:#EBC7F0;         /* orchid · ink 12.55 */
+  --cat-trip:#C7D3FA;        /* periwinkle · ink 12.70 */
+  --cat-permission:#DDEFAE;  /* lime   · ink 15.32 */
+  --cat-correction:#C2E5F2;  /* sky    · ink 14.19 */
+  --cat-foreground:#111111; --cat-border:#111111;
+
+  /* ── colour · avatar initials (hash of user id → 1 of 6; ink text, never meaning) ── */
+  --avatar-1:#C4EBD6; --avatar-2:#FBC5B5; --avatar-3:#C7D3FA; --avatar-4:#D9CCF5; --avatar-5:#FBE689; --avatar-6:#C2E5F2; --avatar-foreground:#111111;
+
+  /* ── colour · sidebar (shadcn) · butter = active item only ── */
+  --sidebar:#FFFDF9; --sidebar-foreground:#4A433B;               /* 9.58 */
+  --sidebar-primary:#F9DC5C; --sidebar-primary-foreground:#111111; /* 13.87 */
+  --sidebar-accent:#EFE8DF; --sidebar-accent-foreground:#111111;   /* 15.54 */
+  --sidebar-border:#E2D9CC; --sidebar-ring:#111111;
+
+  /* ── colour · charts (marks ≥3:1 on card) ── */
+  --chart-1:#1F6FB2; --chart-2:#C2560C; --chart-3:#0F8A66; --chart-4:#B5508E; --chart-5:#4A433B; /* 5.20 4.46 4.26 4.59 9.58 */
+  --chart-present:#1B6E45; --chart-late:#B8400A; --chart-absent:#C0262D;  /* 6.15 5.47 5.81 */
+  --chart-grid:#E2D9CC; --chart-axis:#8F8577; --chart-label:#6B6258;       /* deco · 3.57 · 5.88 */
+  --chart-tooltip:#111111; --chart-tooltip-foreground:#FFFDF9;
+
+  /* ── colour · illustration (marketing only, theme-invariant) ── */
+  --illo-ink:#111111; --illo-paper:#FFFDF9; --illo-yellow:#F9DC5C; --illo-blue:#6E9BF2; --illo-coral:#FBC5B5;
+
+  /* ── elevation (literal per theme) ── */
+  --elev-hard-sm:2px 2px 0 #111111;
+  --elev-hard:4px 4px 0 #111111;
+  --elev-hard-lg:6px 6px 0 #111111;
+  --elev-pop:0 8px 24px rgb(17 17 17 / 0.12), 0 2px 6px rgb(17 17 17 / 0.08);
+
+  /* ── type ── */
+  /* --font-jakarta / --font-plex-arabic / --font-plex-mono are set by next/font in apps/web/app/layout.tsx.
+     The var() fallbacks are the @fontsource family names (option B, docs/design-system/fonts.css). */
+  --font-ui:var(--font-jakarta, "Plus Jakarta Sans", "Plus Jakarta Sans Fallback"), ui-sans-serif, system-ui, sans-serif;
+  --font-code:var(--font-plex-mono, "IBM Plex Mono"), ui-monospace, monospace;
+  --fs-hero:3.5rem;       --lh-hero:4rem;
+  --fs-display:2.5rem;    --lh-display:3rem;
+  --fs-h1:2rem;           --lh-h1:2.5rem;
+  --fs-h2:1.5rem;         --lh-h2:2rem;
+  --fs-h3:1.25rem;        --lh-h3:1.75rem;
+  --fs-h4:1.125rem;       --lh-h4:1.625rem;
+  --fs-body-lg:1rem;      --lh-body-lg:1.5rem;
+  --fs-body:0.875rem;     --lh-body:1.25rem;
+  --fs-body-sm:0.8125rem; --lh-body-sm:1.125rem;
+  --fs-caption:0.75rem;   --lh-caption:1rem;
+  --fs-numeric:3rem;      --lh-numeric:3.25rem;   /* check-in clock, stat values */
+  --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700; --fw-black:800;
+  --tr-tight:-0.02em; --tr-label:0.08em; --case-label:uppercase;
+
+  /* ── space (4px grid) ── */
+  --space-0-5:0.125rem; --space-1:0.25rem; --space-1-5:0.375rem; --space-2:0.5rem;
+  --space-3:0.75rem; --space-4:1rem; --space-5:1.25rem; --space-6:1.5rem; --space-8:2rem;
+  --space-10:2.5rem; --space-12:3rem; --space-16:4rem; --space-20:5rem; --space-24:6rem;
+  --container:80rem;
+
+  /* ── shape ── */
+  --radius:0.75rem; /* shadcn base = lg */
+  --radius-xs:0.25rem; --radius-sm:0.375rem; --radius-md:0.5rem; --radius-lg:0.75rem;
+  --radius-xl:1rem; --radius-2xl:1.5rem; --radius-pill:9999px;   /* same literals as @theme */
+  --bw-hair:1px; --bw-bold:1.5px; --bw-heavy:2px;
+
+  /* ── density: comfortable (default) ── */
+  --control-h:3rem; --control-h-sm:2.5rem; --control-h-xs:2rem;
+  --chip-h:1.75rem; --chip-h-sm:1.375rem;
+  --row-h:3.5rem; --cell-px:1rem; --card-p:1.25rem;
+  --fs-ui:1rem; --fs-cell:0.875rem; --icon:1.25rem;
+
+  /* ── motion ── */
+  --dur-instant:80ms; --dur-fast:120ms; --dur-base:160ms; --dur-slow:200ms; --dur-slower:280ms;
+  --motion-standard:cubic-bezier(.2,0,0,1);
+  --motion-enter:cubic-bezier(0,0,.2,1);
+  --motion-exit:cubic-bezier(.4,0,1,1);
+
+  /* ── direction ── */
+  --flip:1; /* multiply into scaleX() on directional icons */
+}
+
+.dark {
+  --background:#16140F;  --foreground:#F4EFE7;
+  --card:#1F1C17;        --card-foreground:#F4EFE7;
+  --popover:#1F1C17;     --popover-foreground:#F4EFE7;
+  --muted:#2A2620;       --muted-foreground:#B3A99B;
+  --subtle-foreground:#D8D0C4;
+  --accent:#2A2620;      --accent-strong:#3A352D;       --accent-foreground:#F4EFE7;
+
+  --primary:#F4EFE7;     --primary-hover:#D8D0C4;       --primary-foreground:#111111;
+  --secondary:#2A2620;   --secondary-hover:#3A352D;     --secondary-foreground:#F4EFE7;
+  --destructive:#FF8A8A; --destructive-hover:#FFA8A8;   --destructive-foreground:#16140F;
+  --brand:#F9DC5C;       --brand-hover:#E8C53A;         --brand-foreground:#111111;
+  --brand-subtle:#4F4310;
+  --inverse:#F4EFE7;     --inverse-foreground:#111111;  --inverse-muted:#4A433B; --inverse-border:#8F8577;
+  --disabled:#2A2620;    --disabled-foreground:#6B6258; --disabled-border:#3A352D; /* 2.52 · exempt (disabled) */
+
+  --border:#3A352D; --input:#857B6E; --input-hover:#B3A99B;
+  --border-strong:#D8D0C4; --ring:#F9DC5C;
+  --scrim:rgb(0 0 0 / 0.64);
+
+  --status-present:#6FD69B;   --status-present-bg:#13291D;
+  --status-late:#FF8C4A;      --status-late-bg:#3A1A08;
+  --status-absent:#FF8A8A;    --status-absent-bg:#3A1517;
+  --status-wfh:#8DB4FF;       --status-wfh-bg:#14223F;
+  --status-leave:#C5A2FF;     --status-leave-bg:#261A3D;
+  --status-trip:#5CCFDB;      --status-trip-bg:#0F2B2F;
+  --status-holiday:#FF8DC0;   --status-holiday-bg:#3A1528;
+  --status-missing:#F2C14E;   --status-missing-bg:#33280C;
+  --status-pending:#F2C14E;   --status-pending-bg:#33280C;
+  --status-approved:#6FD69B;  --status-approved-bg:#13291D;
+  --status-rejected:#FF8A8A;  --status-rejected-bg:#3A1517;
+  --status-cancelled:#D8D0C4; --status-cancelled-bg:#2A2620;
+  --status-withdrawn:#D8D0C4; --status-withdrawn-bg:#2A2620;
+  --status-cancel-requested:#F2C14E; --status-cancel-requested-bg:#33280C;
+  --status-not-yet:#B3A99B;   --status-not-yet-bg:#2A2620;         /* 6.49 */
+  --status-out:#D8D0C4;       --status-out-bg:#2A2620;             /* 9.84 */
+
+  --success:#6FD69B; --success-bg:#13291D;
+  --warning:#F2C14E; --warning-bg:#33280C;
+  --error:#FF8A8A;   --error-bg:#3A1517;
+  --info:#8DB4FF;    --info-bg:#14223F;
+
+  --cat-leave:#4A2E1A; --cat-wfh:#3E2547; --cat-trip:#2F3A5C; --cat-permission:#2F3A14; --cat-correction:#1C4150; /* cream 10.81 11.76 9.76 10.57 9.55 */
+  --cat-foreground:#F4EFE7; --cat-border:transparent;
+
+  --avatar-1:#1F4434; --avatar-2:#5A2F27; --avatar-3:#2F3A5C; --avatar-4:#3A3354; --avatar-5:#4F4310; --avatar-6:#1C4150; --avatar-foreground:#F4EFE7;
+
+  --sidebar:#1F1C17; --sidebar-foreground:#D8D0C4;               /* 11.11 */
+  --sidebar-primary:#F9DC5C; --sidebar-primary-foreground:#111111;
+  --sidebar-accent:#2A2620; --sidebar-accent-foreground:#F4EFE7;   /* 13.14 */
+  --sidebar-border:#3A352D; --sidebar-ring:#F9DC5C;
+
+  --chart-1:#6AAEF0; --chart-2:#FF9A5C; --chart-3:#4CCB9F; --chart-4:#E79ACF; --chart-5:#D8D0C4; /* 7.22 8.11 8.37 8.02 11.11 */
+  --chart-present:#6FD69B; --chart-late:#FF8C4A; --chart-absent:#FF8A8A;  /* 9.52 7.36 7.48 */
+  --chart-grid:#3A352D; --chart-axis:#857B6E; --chart-label:#B3A99B;       /* deco · 4.09 · 7.33 */
+  --chart-tooltip:#F4EFE7; --chart-tooltip-foreground:#111111;
+
+  --elev-hard-sm:2px 2px 0 #6B6258;
+  --elev-hard:4px 4px 0 #6B6258;
+  --elev-hard-lg:6px 6px 0 #6B6258;
+  --elev-pop:0 8px 24px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.4);
+}
+
+[data-density="compact"] {
+  --control-h:2.25rem; --control-h-sm:2rem; --control-h-xs:1.75rem;
+  --row-h:2.5rem; --cell-px:0.75rem; --card-p:1rem;
+  --fs-ui:0.875rem; --fs-cell:0.8125rem; --icon:1rem;
+}
+@media (pointer: coarse) {
+  [data-density="compact"] { --control-h:2.75rem; } /* 44px touch floor */
+}
+
+:lang(ar) {
+  --font-ui:var(--font-plex-arabic, "IBM Plex Sans Arabic", "IBM Plex Sans Arabic Fallback"), Tahoma, ui-sans-serif, system-ui, sans-serif;
+  --fs-hero:3.25rem;       --lh-hero:4.75rem;
+  --fs-display:2.625rem;   --lh-display:4rem;
+  --fs-h1:2.125rem;        --lh-h1:3.25rem;
+  --fs-h2:1.625rem;        --lh-h2:2.5rem;
+  --fs-h3:1.375rem;        --lh-h3:2.125rem;
+  --fs-h4:1.1875rem;       --lh-h4:1.875rem;
+  --fs-body-lg:1.0625rem;  --lh-body-lg:1.75rem;
+  --fs-body:0.9375rem;     --lh-body:1.5rem;
+  --fs-body-sm:0.875rem;   --lh-body-sm:1.375rem;
+  --fs-caption:0.8125rem;  --lh-caption:1.25rem;
+  --lh-numeric:3.5rem;
+  --fw-black:700;          /* Plex Arabic tops out at 700 */
+  --tr-tight:0; --tr-label:0; --case-label:none;
+}
+
+[dir="rtl"] { --flip:-1; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast:0ms; --dur-base:0ms; --dur-slow:0ms; --dur-slower:0ms; }
+}

@@ -16,8 +16,8 @@ Visual source of truth: the **Stampd Design System** canvas (boards 01–29). Th
 
 | File | What it is |
 |---|---|
-| [`packages/ui/src/styles/tokens.css`](../../next-monorepo/packages/ui/src/styles/tokens.css) | **Source of truth.** Every design token as a CSS variable: `:root` (light), `.dark`, `[data-density="compact"]`, `:lang(ar)`, `[dir="rtl"]` |
-| [`packages/ui/src/styles/globals.css`](../../next-monorepo/packages/ui/src/styles/globals.css) | Tailwind v4 entry: `@theme inline` maps tokens to utilities; base layer; shadcn imports |
+| [`packages/ui/src/styles/tokens.css`](../../packages/ui/src/styles/tokens.css) | **Source of truth.** Every design token as a CSS variable: `:root` (light), `.dark`, `[data-density="compact"]`, `:lang(ar)`, `[dir="rtl"]` |
+| [`packages/ui/src/styles/globals.css`](../../packages/ui/src/styles/globals.css) | Tailwind v4 entry: `@theme inline` maps tokens to utilities; base layer; shadcn imports |
 | `fonts.css` | Option B font loading (@fontsource + metric-matched fallbacks). Not used: the app loads fonts with `next/font` (decision 25) |
 | `decisions.md` | Every locked decision, with rationale and date |
 | `content.md` · `formatting.md` · `iconography.md` · `data-viz.md` · `layout.md` | Cross-cutting rules |

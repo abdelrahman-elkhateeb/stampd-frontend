@@ -9,9 +9,9 @@ Web frontend for **Stampd**, the Employee Ops Platform: attendance, leave, reque
 | Path | What |
 |---|---|
 | `docs/design-system/` | The Stampd design system: principles, decisions, component and pattern specs, and the ticket → component map (`backlog-map.md`). Start with its `README.md` |
-| `next-monorepo/apps/web` | Next.js app (App Router) |
-| `next-monorepo/packages/ui` | Shared UI: shadcn/ui (Radix), `src/styles/tokens.css` (source of truth for tokens) and `src/styles/globals.css` (Tailwind v4 entry) |
-| `next-monorepo/packages/eslint-config`, `typescript-config` | Shared lint and TS settings |
+| `apps/web` | Next.js app (App Router) |
+| `packages/ui` | Shared UI: shadcn/ui (Radix), `src/styles/tokens.css` (source of truth for tokens) and `src/styles/globals.css` (Tailwind v4 entry) |
+| `packages/eslint-config`, `packages/typescript-config` | Shared lint and TS settings |
 
 ## Stack
 
@@ -24,14 +24,13 @@ Fonts: Plus Jakarta Sans (Latin), IBM Plex Sans Arabic, IBM Plex Mono, loaded wi
 Requires Node ≥ 20.9 and pnpm 11 (`corepack enable`, or `npx pnpm@11.25.0 …`).
 
 ```bash
-cd next-monorepo
 pnpm install
 pnpm dev
 ```
 
-Other scripts (run from `next-monorepo/`): `pnpm build`, `pnpm lint` (fails on any warning), `pnpm typecheck`.
+Other scripts (from the repo root): `pnpm build`, `pnpm lint` (fails on any warning), `pnpm typecheck`.
 
-Add shadcn components from `next-monorepo/`:
+Add shadcn components from the repo root:
 
 ```bash
 pnpm dlx shadcn@latest add dialog -c apps/web
