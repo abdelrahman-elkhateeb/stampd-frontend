@@ -6,6 +6,7 @@ import { LocaleSwitcher } from "@/components/locale-switcher"
 import { logoutAction } from "@/features/auth/actions"
 import { getCurrentUser } from "@/lib/current-user"
 import { Button } from "@workspace/ui/components/button"
+import { Wordmark } from "@workspace/ui/components/wordmark"
 
 // Placeholder shell until FE-03 builds the real navigation.
 export default async function AppLayout({
@@ -17,7 +18,7 @@ export default async function AppLayout({
   return (
     <CurrentUserProvider user={user}>
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3">
-        <span className="font-bold">{t("app.name")}</span>
+        <Wordmark>{t("app.name")}</Wordmark>
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
           <span className="hidden text-body-sm text-muted-foreground sm:inline">

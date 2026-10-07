@@ -6,6 +6,7 @@ import { LoginForm } from "@/features/auth/login-form"
 import type { Locale } from "@/i18n/routing"
 import { safeReturnTo } from "@/lib/auth/return-to"
 import { serverEnv } from "@/lib/env/server"
+import { Wordmark } from "@workspace/ui/components/wordmark"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth.login")
@@ -21,6 +22,7 @@ export default async function LoginPage({
   setRequestLocale(locale as Locale)
   const query = await searchParams
   const t = await getTranslations("auth.login")
+  const tApp = await getTranslations("app")
 
   const returnTo =
     typeof query.returnTo === "string"
@@ -30,6 +32,7 @@ export default async function LoginPage({
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-100 flex-col justify-center gap-6 px-4 py-12">
+      <Wordmark className="self-start">{tApp("name")}</Wordmark>
       <h1 className="text-h2 font-bold">{t("title")}</h1>
       {expired ? (
         <p

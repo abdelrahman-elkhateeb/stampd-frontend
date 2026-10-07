@@ -2,7 +2,7 @@
 
 Stampd is the design system for the Employee Ops Platform: a multi-tenant HR operations web app for GCC teams (attendance, leave, requests, approvals). It ships in English and Arabic (full RTL), in light and dark, on React + Tailwind v4 + shadcn/ui (Radix).
 
-Visual source of truth: the **Stampd Design System** canvas (boards 01–29). This folder is the implementation source of truth. If the two disagree, this folder wins, and the canvas gets fixed.
+Visual source of truth: the **Stampd Design System** canvas, saved at [`reference/stampd-design-system.html`](reference/stampd-design-system.html) (open it in a browser). This folder is the implementation source of truth. If the two disagree, this folder wins, and the canvas gets fixed.
 
 ## Principles
 
@@ -20,6 +20,8 @@ Visual source of truth: the **Stampd Design System** canvas (boards 01–29). Th
 | [`packages/ui/src/styles/globals.css`](../../packages/ui/src/styles/globals.css) | Tailwind v4 entry: `@theme inline` maps tokens to utilities; base layer; shadcn imports |
 | `fonts.css` | Option B font loading (@fontsource + metric-matched fallbacks). Not used: the app loads fonts with `next/font` (decision 25) |
 | `decisions.md` | Every locked decision, with rationale and date |
+| `brand.md` | The Stampd wordmark (the stamp) and where it goes |
+| `reference/` | The design canvas HTML, visual reference only |
 | `content.md` · `formatting.md` · `iconography.md` · `data-viz.md` · `layout.md` | Cross-cutting rules |
 | `components/*.md` | One spec per component (template below) |
 | `patterns/*.md` | Approve/reject, forms & validation, empty/loading/error, RTL, destructive confirm |
