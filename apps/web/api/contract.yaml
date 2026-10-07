@@ -1,0 +1,245 @@
+# TEMPORARY STUB (FE-01b). Replaced by the shared API contract from BE-00.
+# Only covers what the foundation needs: auth, current user, the error format
+# and one paginated list. Keep it valid OpenAPI 3.1 with operationIds, named
+# schemas and examples: Orval generates the client, Zod schemas and mocks from it.
+openapi: 3.1.0
+info:
+  title: Stampd API (stub)
+  version: 0.0.1
+servers:
+  - url: http://localhost:4000
+tags:
+  - name: auth
+  - name: me
+  - name: employees
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthTokens" }
+        "401": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refreshSession
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefreshRequest" }
+      responses:
+        "200":
+          description: New token pair (the refresh token rotates)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthTokens" }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefreshRequest" }
+      responses:
+        "204": { description: Refresh token revoked }
+  /me:
+    get:
+      tags: [me]
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: The signed-in user, their role and company basics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "401": { $ref: "#/components/responses/Error" }
+  /employees:
+    get:
+      tags: [employees]
+      operationId: listEmployees
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/Sort" }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: A page of employees
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmployeePage" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Sort:
+      name: sort
+      in: query
+      description: Field name, prefixed with "-" for descending (e.g. "-createdAt")
+      schema: { type: string }
+  headers:
+    RequestId:
+      description: Echoes the X-Request-Id sent by the client (or one the API generated)
+      schema: { type: string }
+  responses:
+    Error:
+      description: Standard error
+      headers:
+        X-Request-Id: { $ref: "#/components/headers/RequestId" }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          example:
+            code: VALIDATION_FAILED
+            message: Request validation failed
+            fieldErrors:
+              - { field: email, code: REQUIRED, message: email is required }
+  schemas:
+    ErrorCode:
+      type: string
+      description: Stable machine-readable code. The UI translates codes; message is for logs only.
+      enum:
+        - VALIDATION_FAILED
+        - INVALID_CREDENTIALS
+        - ACCOUNT_DEACTIVATED
+        - TOO_MANY_ATTEMPTS
+        - UNAUTHENTICATED
+        - SESSION_EXPIRED
+        - FORBIDDEN
+        - NOT_FOUND
+        - CONFLICT
+        - INTERNAL_ERROR
+    FieldErrorCode:
+      type: string
+      enum: [REQUIRED, INVALID_FORMAT, TOO_SHORT, TOO_LONG, OUT_OF_RANGE, ALREADY_EXISTS]
+    FieldError:
+      type: object
+      required: [field, code, message]
+      properties:
+        field:
+          type: string
+          description: Dot path of the request field, for example email
+        code: { $ref: "#/components/schemas/FieldErrorCode" }
+        message: { type: string }
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { $ref: "#/components/schemas/ErrorCode" }
+        message: { type: string }
+        fieldErrors:
+          type: array
+          items: { $ref: "#/components/schemas/FieldError" }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: sara@demo.stampd.app }
+        password: { type: string, minLength: 1, example: demo-password }
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    AuthTokens:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken: { type: string, example: at_demo }
+        refreshToken: { type: string, example: rt_demo }
+        expiresIn:
+          type: integer
+          description: Access token lifetime in seconds
+          example: 900
+    Role:
+      type: string
+      enum: [EMPLOYEE, MANAGER, ADMIN]
+    Locale:
+      type: string
+      enum: [en, ar]
+    Weekday:
+      type: string
+      enum: [SUN, MON, TUE, WED, THU, FRI, SAT]
+    Company:
+      type: object
+      required: [id, name, timezone, weekStart]
+      properties:
+        id: { type: string, format: uuid, example: 6f1c1d1e-3c55-4f0a-9b8e-6a2f6c7d8e90 }
+        name: { type: string, example: Demo Trading Co. }
+        timezone: { type: string, description: IANA timezone, example: Asia/Riyadh }
+        weekStart: { $ref: "#/components/schemas/Weekday" }
+    CurrentUser:
+      type: object
+      required: [id, name, email, role, locale, company]
+      properties:
+        id: { type: string, format: uuid, example: 0b6c2f0e-8d7a-4a51-9a0e-2a4f7b8c9d10 }
+        name: { type: string, example: Sara Al-Harbi }
+        email: { type: string, format: email, example: sara@demo.stampd.app }
+        role: { $ref: "#/components/schemas/Role" }
+        locale: { $ref: "#/components/schemas/Locale" }
+        company: { $ref: "#/components/schemas/Company" }
+    Employee:
+      type: object
+      required: [id, name, email, department, status, joinedOn]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, example: Omar Khalid }
+        email: { type: string, format: email, example: omar@demo.stampd.app }
+        department: { type: string, example: Operations }
+        status: { type: string, enum: [INVITED, ACTIVE, DEACTIVATED] }
+        joinedOn:
+          type: string
+          format: date
+          description: Calendar day (YYYY-MM-DD), not a timestamp
+          example: "2026-03-01"
+    PageMeta:
+      type: object
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page: { type: integer, example: 1 }
+        pageSize: { type: integer, example: 20 }
+        totalItems: { type: integer, example: 42 }
+        totalPages: { type: integer, example: 3 }
+    EmployeePage:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Employee" }
+        meta: { $ref: "#/components/schemas/PageMeta" }
+security:
+  - bearer: []

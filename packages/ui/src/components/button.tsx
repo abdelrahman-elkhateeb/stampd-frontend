@@ -1,38 +1,60 @@
+"use client"
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { cn } from "@workspace/ui/lib/utils"
+import { Loader2Icon, type LucideIcon } from "lucide-react"
 import { Slot } from "radix-ui"
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip"
+
+// docs/design-system/components/button.md
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  [
+    "group/button relative inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap select-none",
+    "rounded-pill border border-transparent font-semibold outline-none",
+    "transition-[background-color,border-color,box-shadow,transform] duration-(--dur-fast) ease-standard",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-icon",
+    // Disabled: stays focusable (aria-disabled) so the reason can be read out.
+    "aria-disabled:cursor-not-allowed aria-disabled:border-disabled-border aria-disabled:bg-disabled aria-disabled:text-disabled-foreground aria-disabled:shadow-none aria-disabled:active:translate-none",
+    "disabled:cursor-not-allowed disabled:border-disabled-border disabled:bg-disabled disabled:text-disabled-foreground disabled:shadow-none",
+    "aria-busy:cursor-progress",
+  ],
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+        brand:
+          "border-[1.5px] border-border-strong bg-brand text-brand-foreground shadow-hard hover:bg-brand-hover active:translate-x-0.5 active:translate-y-0.5 active:shadow-hard-sm",
+        default:
+          "bg-primary text-primary-foreground hover:bg-primary-hover active:translate-y-px",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary text-secondary-foreground hover:bg-secondary-hover active:translate-y-px",
+        outline:
+          "border-input bg-card text-foreground hover:border-border-strong hover:bg-accent active:translate-y-px aria-expanded:bg-accent",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "text-foreground hover:bg-accent active:bg-accent-strong aria-expanded:bg-accent",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-destructive text-destructive-foreground hover:bg-destructive-hover active:translate-y-px",
+        link: "h-auto rounded-none px-0 text-foreground underline decoration-[1.5px] underline-offset-4 hover:decoration-2",
       },
       size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pe-2 has-data-[icon=inline-start]:ps-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pe-1.5 has-data-[icon=inline-start]:ps-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pe-1.5 has-data-[icon=inline-start]:ps-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pe-2 has-data-[icon=inline-start]:ps-2",
-        icon: "size-8",
+        hero: "h-14 px-7 text-body-lg font-bold",
+        default: "h-control px-6 text-ui compact:px-4",
+        sm: "h-control-sm px-5 text-body compact:px-4",
+        // Row actions: the visible pill is small, the touch target is padded to 44px.
+        xs: "h-control-xs px-3 text-body-sm after:absolute after:-inset-x-1 after:-inset-y-2 after:content-['']",
+        icon: "size-control",
+        "icon-sm": "size-control-sm",
         "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
+          "size-control-xs after:absolute after:-inset-2 after:content-[''] [&_svg:not([class*='size-'])]:size-4",
       },
     },
+    compoundVariants: [{ variant: "link", class: "h-auto px-0" }],
     defaultVariants: {
       variant: "default",
       size: "default",
@@ -40,27 +62,96 @@ const buttonVariants = cva(
   }
 )
 
+type ButtonProps = React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+    /** Shows a spinner, keeps the width and blocks double submits. */
+    loading?: boolean
+    /** Present-tense label while loading, e.g. "Checking in…". */
+    loadingLabel?: string
+    leadingIcon?: LucideIcon
+    trailingIcon?: LucideIcon
+    /** Directional trailing icons (arrows, chevrons) mirror in RTL. */
+    flipTrailingIcon?: boolean
+    /** Why the button can't be used. Keeps it focusable and explains in a tooltip. */
+    disabledReason?: string
+  }
+
 function Button({
   className,
   variant = "default",
   size = "default",
   asChild = false,
+  loading = false,
+  loadingLabel,
+  leadingIcon: LeadingIcon,
+  trailingIcon: TrailingIcon,
+  flipTrailingIcon = false,
+  disabledReason,
+  disabled,
+  onClick,
+  children,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
+}: ButtonProps) {
+  const reasonId = React.useId()
   const Comp = asChild ? Slot.Root : "button"
+  const blocked = Boolean(disabledReason) || loading
 
-  return (
+  const content = asChild ? (
+    children
+  ) : (
+    <>
+      {loading ? (
+        <Loader2Icon
+          aria-hidden
+          className="animate-spin motion-reduce:animate-none"
+        />
+      ) : LeadingIcon ? (
+        <LeadingIcon aria-hidden />
+      ) : null}
+      {loading && loadingLabel ? loadingLabel : children}
+      {TrailingIcon && !loading ? (
+        <TrailingIcon
+          aria-hidden
+          className={cn(flipTrailingIcon && "flip-rtl")}
+        />
+      ) : null}
+    </>
+  )
+
+  const button = (
     <Comp
+      {...props}
       data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
+      disabled={disabled}
+      aria-disabled={disabledReason ? true : undefined}
+      aria-describedby={disabledReason ? reasonId : props["aria-describedby"]}
+      aria-busy={loading || undefined}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        if (blocked) {
+          event.preventDefault()
+          return
+        }
+        onClick?.(event)
+      }}
+    >
+      {content}
+    </Comp>
+  )
+
+  if (!disabledReason) {
+    return button
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent id={reasonId}>{disabledReason}</TooltipContent>
+    </Tooltip>
   )
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants, type ButtonProps }

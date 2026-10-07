@@ -1,0 +1,4 @@
+api/generated/
+.next/
+playwright-report/
+test-results/

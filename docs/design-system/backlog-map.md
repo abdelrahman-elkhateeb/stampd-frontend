@@ -38,7 +38,8 @@ Source: Trello board "Employee Ops Platform", FRONTEND list (read 2026-10-06). �
 
 Composites for the auth page shell (FE-02), sessions list and month summary strip (FE-06) reuse existing parts: card + today-card sessions rows + stat tiles. No new components are needed.
 
-## Ticket updates to request (not edited, read-only access)
-- FE-01: "light theme" → "light + dark (both QA'd)".
+## Ticket updates
+
+FE-01 was updated on Trello on 2026-10-07 (light + dark, split into FE-01a/b/c). Still open:
 - FE-04: default working days → decide Sun–Thu (GCC) vs Mon–Fri; leave-type colour → icon.
 - FE-12: "colour + icon + text per type" → "category colour per request type + icon; leave types by icon".

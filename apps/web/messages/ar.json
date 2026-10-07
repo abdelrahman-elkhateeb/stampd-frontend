@@ -1,0 +1,150 @@
+{
+  "app": {
+    "name": "Stampd",
+    "tagline": "الحضور والإجازات والطلبات لفريقك"
+  },
+  "home": {
+    "title": "جارٍ بناء Stampd",
+    "body": "الأساس جاهز. تصل الشاشات مع المهام التالية."
+  },
+  "locale": {
+    "label": "اللغة",
+    "en": "English",
+    "ar": "العربية"
+  },
+  "theme": {
+    "label": "المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "حسب النظام"
+  },
+  "errors": {
+    "goBack": "رجوع",
+    "goHome": "الانتقال إلى لوحة التحكم",
+    "tryAgain": "إعادة المحاولة",
+    "reload": "إعادة تحميل الصفحة",
+    "supportCode": "رمز الدعم",
+    "copySupportCode": "نسخ رمز الدعم",
+    "copied": "تم النسخ",
+    "notFound": {
+      "title": "لم نعثر على هذه الصفحة",
+      "body": "قد يكون الرابط قديمًا أو مكتوبًا بشكل خاطئ. بياناتك بأمان."
+    },
+    "forbidden": {
+      "title": "ليست لديك صلاحية الوصول",
+      "body": "هذه الصفحة مخصصة لدور آخر. اطلب من المسؤول إذا كنت بحاجة إليها."
+    },
+    "crash": {
+      "title": "تعذّر تحميل هذه الصفحة",
+      "body": "حدث خطأ من جهتنا. أعد المحاولة أو أعد تحميل الصفحة."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "تسجيل الدخول إلى Stampd",
+      "email": "البريد الإلكتروني للعمل",
+      "password": "كلمة المرور",
+      "submit": "تسجيل الدخول",
+      "submitting": "جارٍ تسجيل الدخول…",
+      "expired": "انتهت جلستك. سجّل الدخول مجددًا لتكمل من حيث توقفت.",
+      "demoHint": "واجهة تجريبية: استخدم admin@demo.stampd.app أو manager@demo.stampd.app أو employee@demo.stampd.app مع كلمة المرور demo-password."
+    },
+    "logout": "تسجيل الخروج"
+  },
+  "fieldErrors": {
+    "REQUIRED": "املأ هذا الحقل",
+    "INVALID_FORMAT": "تحقّق من صيغة هذا الحقل",
+    "TOO_SHORT": "القيمة قصيرة جدًا",
+    "TOO_LONG": "القيمة طويلة جدًا",
+    "OUT_OF_RANGE": "القيمة خارج النطاق المسموح",
+    "ALREADY_EXISTS": "هذه القيمة مستخدمة بالفعل"
+  },
+  "apiErrors": {
+    "VALIDATION_FAILED": "بعض الحقول تحتاج إلى مراجعة. تحقّق من الحقول المميّزة.",
+    "INVALID_CREDENTIALS": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "ACCOUNT_DEACTIVATED": "لم يعد حسابك نشطًا. تواصل مع المسؤول إذا كان هذا خطأ.",
+    "TOO_MANY_ATTEMPTS": "محاولات كثيرة. انتظر بضع دقائق ثم حاول مجددًا.",
+    "UNAUTHENTICATED": "انتهت جلستك. سجّل الدخول مجددًا.",
+    "SESSION_EXPIRED": "انتهت جلستك. سجّل الدخول مجددًا.",
+    "FORBIDDEN": "ليست لديك صلاحية لتنفيذ هذا الإجراء.",
+    "NOT_FOUND": "لم نعثر على ما تبحث عنه. ربما تمت إزالته.",
+    "CONFLICT": "عدّل شخص آخر هذا العنصر. أعد التحميل وحاول مجددًا.",
+    "INTERNAL_ERROR": "حدث خطأ من جهتنا. حاول مجددًا بعد قليل.",
+    "NETWORK_ERROR": "تعذّر الاتصال. تحقّق من اتصالك وحاول مجددًا.",
+    "UNKNOWN": "حدث خطأ. حاول مجددًا."
+  },
+  "status": {
+    "present": "حاضر",
+    "late": "متأخر",
+    "absent": "غائب",
+    "wfh": "عمل عن بُعد",
+    "onLeave": "في إجازة",
+    "businessTrip": "رحلة عمل",
+    "holiday": "عطلة رسمية",
+    "weekend": "عطلة نهاية الأسبوع",
+    "missingCheckout": "انصراف غير مسجّل",
+    "notYet": "لم يسجّل الحضور بعد",
+    "out": "خارج العمل"
+  },
+  "request": {
+    "pending": "قيد الانتظار",
+    "approved": "مقبول",
+    "rejected": "مرفوض",
+    "withdrawn": "مسحوب",
+    "cancelRequested": "طُلب الإلغاء",
+    "cancelled": "ملغى"
+  },
+  "account": {
+    "invited": "مدعو",
+    "active": "نشط",
+    "deactivated": "موقوف"
+  },
+  "flag": {
+    "late": "متأخر",
+    "missingCheckout": "انصراف غير مسجّل",
+    "corrected": "مُصحَّح",
+    "wfhNoCheckin": "عمل عن بُعد دون تسجيل حضور",
+    "workedNonWorkingDay": "عمل في يوم عطلة",
+    "overdue": "تجاوز المهلة"
+  },
+  "common": {
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "clearFilters": "مسح عوامل التصفية",
+    "tryAgain": "إعادة المحاولة",
+    "loading": "جارٍ التحميل…",
+    "choose": "اختيار",
+    "apply": "تطبيق",
+    "clear": "مسح"
+  },
+  "table": {
+    "sortedAscending": "مرتّب تصاعديًا",
+    "sortedDescending": "مرتّب تنازليًا",
+    "notSorted": "غير مرتّب",
+    "loading": "جارٍ تحميل {thing}"
+  },
+  "pagination": {
+    "nav": "التنقل بين الصفحات",
+    "previous": "الصفحة السابقة",
+    "next": "الصفحة التالية",
+    "page": "الصفحة {page}",
+    "range": "{from}–{to} من {total}",
+    "pageOf": "الصفحة {page} من {count}",
+    "rowsPerPage": "عدد الصفوف في الصفحة"
+  },
+  "filters": {
+    "active": "المطبّقة:",
+    "clearAll": "مسح الكل",
+    "remove": "إزالة عامل التصفية {name}",
+    "results": "{count, plural, zero {لا توجد نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}"
+  },
+  "time": {
+    "hours": "الساعات",
+    "minutes": "الدقائق",
+    "companyTime": "معروض بتوقيت الشركة · {zone}"
+  },
+  "datePicker": {
+    "placeholder": "اختر تاريخًا",
+    "rangePlaceholder": "اختر التواريخ"
+  }
+}

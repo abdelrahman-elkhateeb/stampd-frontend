@@ -214,3 +214,20 @@
   <span class="h-chip-sm rounded-pill bg-status-late-bg text-status-late …">
   <svg class="flip-rtl">  // directional icons only
 */
+
+/* Skeleton (docs/design-system/components/skeleton.md): appears only after 300 ms so fast
+   loads never flash, then shimmers; static under reduced motion. */
+@keyframes skeleton-appear { to { opacity: 1; } }
+@keyframes skeleton-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+@layer components {
+  .skeleton-delay { opacity: 0; animation: skeleton-appear 0s linear 300ms forwards; }
+  .skeleton-block {
+    background-color: var(--muted);
+    background-image: linear-gradient(90deg, var(--muted) 0%, var(--accent-strong) 50%, var(--muted) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-block { animation: none; background-image: none; }
+  }
+}
