@@ -4,8 +4,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { LoginForm } from "@/features/auth/login-form"
 import type { Locale } from "@/i18n/routing"
-import { safeReturnTo } from "@/lib/auth/return-to"
-import { serverEnv } from "@/lib/env/server"
 import { Wordmark } from "@workspace/ui/components/wordmark"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,36 +14,16 @@ export async function generateMetadata(): Promise<Metadata> {
 // Functional placeholder; FE-02 builds the real auth page shell.
 export default async function LoginPage({
   params,
-  searchParams,
 }: PageProps<"/[locale]/login">) {
-  const { locale } = await params
-  setRequestLocale(locale as Locale)
-  const query = await searchParams
+  setRequestLocale((await params).locale as Locale)
   const t = await getTranslations("auth.login")
   const tApp = await getTranslations("app")
-
-  const returnTo =
-    typeof query.returnTo === "string"
-      ? safeReturnTo(query.returnTo)
-      : undefined
-  const expired = query.reason === "expired"
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-100 flex-col justify-center gap-6 px-4 py-12">
       <Wordmark className="self-start">{tApp("name")}</Wordmark>
       <h1 className="text-h2 font-bold">{t("title")}</h1>
-      {expired ? (
-        <p
-          role="status"
-          className="rounded-md bg-warning-bg px-4 py-3 text-body-sm text-warning"
-        >
-          {t("expired")}
-        </p>
-      ) : null}
-      <LoginForm returnTo={returnTo} />
-      {serverEnv.API_MOCKING ? (
-        <p className="text-caption text-muted-foreground">{t("demoHint")}</p>
-      ) : null}
+      <LoginForm />
       <LocaleSwitcher />
     </main>
   )

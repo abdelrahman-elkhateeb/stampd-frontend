@@ -4,7 +4,6 @@ import { nextJsConfig } from "@workspace/eslint-config/next-js"
 export default [
   ...nextJsConfig,
   {
-    // Generated from api/contract.yaml by `pnpm api:generate`; never edited by hand.
-    ignores: ["api/generated/**", "playwright-report/**", "test-results/**"],
+    ignores: ["playwright-report/**", "test-results/**"],
   },
 ]

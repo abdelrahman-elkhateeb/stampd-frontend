@@ -5,5 +5,4 @@ node_modules/
 coverage/
 pnpm-lock.yaml
 .pnpm-store/
-apps/web/api/generated/
 docs/design-system/reference/

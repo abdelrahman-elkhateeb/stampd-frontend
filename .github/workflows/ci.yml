@@ -10,9 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Dummy values: CI never calls a real backend.
-  API_BASE_URL: http://localhost:4000
-  API_MOCKING: "true"
   NEXT_PUBLIC_APP_ENV: preview
 
 jobs:
@@ -31,11 +28,6 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-
-      - name: Generated API client matches the contract
-        run: |
-          pnpm --filter web api:generate
-          git diff --exit-code -- apps/web/api/generated
 
       - run: pnpm lint
 

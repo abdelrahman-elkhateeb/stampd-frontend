@@ -2,37 +2,30 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslations } from "next-intl"
-import { useTransition } from "react"
 import { useForm } from "react-hook-form"
+import { z } from "zod"
 
-import { LoginBody } from "@/api/generated/zod/auth/auth"
-import type { LoginRequest } from "@/api/generated/model"
-import { FormAlert, TextField } from "@/components/form-fields"
-import { applyFormErrors, codeErrorMap } from "@/lib/forms"
+import { TextField } from "@/components/form-fields"
+import { useRouter } from "@/i18n/navigation"
+import { codeErrorMap } from "@/lib/forms"
 import { Button } from "@workspace/ui/components/button"
 import { FieldGroup } from "@workspace/ui/components/field"
 
-import { loginAction } from "./actions"
+const LoginBody = z.object({ email: z.email(), password: z.string().min(1) })
 
-export function LoginForm({ returnTo }: { returnTo?: string }) {
+export function LoginForm() {
   const t = useTranslations("auth.login")
-  const [pending, startTransition] = useTransition()
-  const form = useForm<LoginRequest>({
+  const router = useRouter()
+  const form = useForm({
     resolver: zodResolver(LoginBody, codeErrorMap),
     defaultValues: { email: "", password: "" },
   })
 
-  const onSubmit = form.handleSubmit((values) => {
-    startTransition(async () => {
-      const result = await loginAction(values, returnTo)
-      // Success redirects on the server; anything returned is an error to show.
-      if (result) applyFormErrors(form.setError, result)
-    })
-  })
+  // ponytail: no backend yet, a valid form just opens the app. Call the login API here once it exists.
+  const onSubmit = form.handleSubmit(() => router.push("/"))
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
-      <FormAlert form={form} />
       <FieldGroup>
         <TextField
           form={form}
@@ -51,9 +44,7 @@ export function LoginForm({ returnTo }: { returnTo?: string }) {
           autoComplete="current-password"
         />
       </FieldGroup>
-      <Button type="submit" loading={pending} loadingLabel={t("submitting")}>
-        {t("submit")}
-      </Button>
+      <Button type="submit">{t("submit")}</Button>
     </form>
   )
 }

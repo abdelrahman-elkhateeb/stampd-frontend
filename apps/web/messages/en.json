@@ -30,10 +30,6 @@
       "title": "We can't find that page",
       "body": "The link may be old or mistyped. Your data is safe."
     },
-    "forbidden": {
-      "title": "You don't have access",
-      "body": "This page is for a different role. Ask your admin if you need it."
-    },
     "crash": {
       "title": "This page didn't load",
       "body": "Something went wrong on our side. Try again, or reload the page."
@@ -44,10 +40,7 @@
       "title": "Log in to Stampd",
       "email": "Work email",
       "password": "Password",
-      "submit": "Log in",
-      "submitting": "Logging in…",
-      "expired": "Your session ended. Log in again to continue where you left off.",
-      "demoHint": "Mock API: use admin@demo.stampd.app, manager@demo.stampd.app or employee@demo.stampd.app with the password demo-password."
+      "submit": "Log in"
     },
     "logout": "Log out"
   },
@@ -55,23 +48,7 @@
     "REQUIRED": "Fill in this field",
     "INVALID_FORMAT": "Check the format of this field",
     "TOO_SHORT": "This is too short",
-    "TOO_LONG": "This is too long",
-    "OUT_OF_RANGE": "This value is out of range",
-    "ALREADY_EXISTS": "This is already in use"
-  },
-  "apiErrors": {
-    "VALIDATION_FAILED": "Some fields need attention. Check the highlighted fields.",
-    "INVALID_CREDENTIALS": "Email or password is incorrect",
-    "ACCOUNT_DEACTIVATED": "Your account is no longer active. Ask your admin if this is a mistake.",
-    "TOO_MANY_ATTEMPTS": "Too many attempts. Wait a few minutes and try again.",
-    "UNAUTHENTICATED": "Your session ended. Log in again.",
-    "SESSION_EXPIRED": "Your session ended. Log in again.",
-    "FORBIDDEN": "You don't have access to do this.",
-    "NOT_FOUND": "We can't find what you're looking for. It may have been removed.",
-    "CONFLICT": "Someone else changed this. Reload and try again.",
-    "INTERNAL_ERROR": "Something went wrong on our side. Try again in a moment.",
-    "NETWORK_ERROR": "Couldn't connect. Check your connection and try again.",
-    "UNKNOWN": "Something went wrong. Try again."
+    "TOO_LONG": "This is too long"
   },
   "status": {
     "present": "Present",
