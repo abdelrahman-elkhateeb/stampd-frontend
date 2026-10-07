@@ -247,10 +247,4 @@ function DateRangePicker({
   )
 }
 
-export {
-  DatePicker,
-  DateRangePicker,
-  toDate as plainDateToDate,
-  toPlain as dateToPlainDate,
-  type DateRangeValue,
-}
+export { DatePicker, DateRangePicker, type DateRangeValue }

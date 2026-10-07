@@ -1,7 +1,6 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { TriangleAlertIcon } from "lucide-react"
 import { useId } from "react"
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form"
 
@@ -57,26 +56,5 @@ export function TextField<T extends FieldValues>({
         </FieldError>
       ) : null}
     </Field>
-  )
-}
-
-/** Form-level error (e.g. wrong credentials), announced once. */
-export function FormAlert<T extends FieldValues>({
-  form,
-}: {
-  form: UseFormReturn<T>
-}) {
-  const t = useTranslations("apiErrors")
-  const code = form.formState.errors.root?.server?.message
-  if (!code) return null
-
-  return (
-    <div
-      role="alert"
-      className="flex items-start gap-3 rounded-md bg-error-bg px-4 py-3 text-body-sm text-error"
-    >
-      <TriangleAlertIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
-      <span>{t.has(code as never) ? t(code as never) : t("UNKNOWN")}</span>
-    </div>
   )
 }

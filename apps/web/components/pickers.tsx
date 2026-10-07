@@ -4,8 +4,7 @@ import { ar as dateFnsAr, enGB as dateFnsEnGb } from "date-fns/locale"
 import { useLocale, useTranslations } from "next-intl"
 import { useId } from "react"
 
-import type { Weekday as ApiWeekday } from "@/api/generated/model"
-import { useCurrentUser } from "@/components/current-user-provider"
+import { DEMO_USER } from "@/lib/demo-user"
 import { useFormat } from "@/lib/use-format"
 import {
   DatePicker,
@@ -13,7 +12,6 @@ import {
   type DateRangeValue,
   type Holiday,
   type PlainDate,
-  type Weekday,
 } from "@workspace/ui/components/date-picker"
 import {
   Field,
@@ -23,26 +21,12 @@ import {
 } from "@workspace/ui/components/field"
 import { TimeInput } from "@workspace/ui/components/time-input"
 
-const WEEKDAY_INDEX: Record<ApiWeekday, Weekday> = {
-  SUN: 0,
-  MON: 1,
-  TUE: 2,
-  WED: 3,
-  THU: 4,
-  FRI: 5,
-  SAT: 6,
-}
-
-// Until company settings (FE-04) are in the current-user response, assume the GCC week.
-const DEFAULT_WORKING_DAYS: Weekday[] = [0, 1, 2, 3, 4]
-
 /** Week start, working days and month names from the company and the user's language. */
 function useCompanyCalendar(holidays?: Holiday[]) {
   const locale = useLocale()
-  const { company } = useCurrentUser()
   return {
-    weekStartsOn: WEEKDAY_INDEX[company.weekStart],
-    workingDays: DEFAULT_WORKING_DAYS,
+    weekStartsOn: DEMO_USER.company.weekStart,
+    workingDays: DEMO_USER.company.workingDays,
     holidays,
     locale: locale === "ar" ? dateFnsAr : dateFnsEnGb,
   }
@@ -159,7 +143,6 @@ export function TimeField({
   zoneLabel?: string
 }) {
   const t = useTranslations("time")
-  const { timeZone } = useFormat()
   const id = useId()
 
   return (
@@ -176,7 +159,7 @@ export function TimeField({
         disabled={disabled}
       />
       <FieldDescription id={`${id}-description`}>
-        {t("companyTime", { zone: timeZone })}
+        {t("companyTime", { zone: DEMO_USER.company.timezone })}
       </FieldDescription>
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </Field>

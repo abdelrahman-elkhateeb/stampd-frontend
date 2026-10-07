@@ -1,8 +1,6 @@
 "use client"
 
-import * as Sentry from "@sentry/nextjs"
 import { usePathname } from "next/navigation"
-import { useEffect } from "react"
 
 import "@workspace/ui/globals.css"
 import { fontVariables } from "@/lib/fonts"
@@ -22,10 +20,6 @@ export default function GlobalError({
 }) {
   const isArabic = usePathname()?.startsWith("/ar") ?? false
   const t = (isArabic ? ar : en).errors
-
-  useEffect(() => {
-    Sentry.captureException(error)
-  }, [error])
 
   return (
     <html
