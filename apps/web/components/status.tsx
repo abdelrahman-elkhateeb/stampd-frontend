@@ -66,3 +66,9 @@ export function StatusFlag({ flag }: { flag: Flag }) {
   const t = useTranslations()
   return <FlagChip flag={flag} label={t(FLAG_KEYS[flag])} />
 }
+
+/** The status name alone, e.g. for aria-labels. */
+export function useStatusLabel() {
+  const t = useTranslations()
+  return (status: ChipStatus) => t(STATUS_KEYS[status])
+}

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest"
 
-import { formatDay, formatDayRange, formatNumber, isPlainDate } from "./format"
+import {
+  formatDay,
+  formatDayRange,
+  formatDuration,
+  formatNumber,
+  formatTime,
+  isPlainDate,
+} from "./format"
 
 // vitest.config.mts runs the suite with TZ=America/Los_Angeles: if a plain day were
 // formatted in the machine timezone instead of UTC, these assertions would fail.
@@ -41,5 +48,24 @@ describe("test setup", () => {
     expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(
       "America/Los_Angeles"
     )
+  })
+})
+
+describe("times and durations", () => {
+  it("shows instants in company time, 24-hour", () => {
+    expect(formatTime("2026-10-08T05:02:00Z", "en", "Asia/Riyadh")).toBe(
+      "08:02"
+    )
+    expect(formatTime("2026-10-08T14:30:00Z", "ar", "Asia/Riyadh")).toBe(
+      "17:30"
+    )
+  })
+
+  it("omits a zero part of a duration", () => {
+    expect(formatDuration(465, "en")).toBe("7h 45m")
+    expect(formatDuration(480, "en")).toBe("8h")
+    expect(formatDuration(45, "en")).toBe("45m")
+    expect(formatDuration(0, "en")).toBe("0m")
+    expect(formatDuration(465, "ar")).toBe("7س 45د")
   })
 })
