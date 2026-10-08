@@ -22,6 +22,14 @@ import {
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
 import { NumberStepper } from "@workspace/ui/components/number-stepper"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select"
+import { Textarea } from "@workspace/ui/components/textarea"
 import { cn } from "@workspace/ui/lib/utils"
 
 /** The translated error for a field. Messages are codes (see lib/forms.ts), translated here. */
@@ -258,6 +266,113 @@ export function CheckboxField<T extends FieldValues>({
           {label}
         </label>
       </div>
+      {error ? <FieldError id={error.id}>{error.text}</FieldError> : null}
+    </Field>
+  )
+}
+
+/** A required reason (textarea.md › reason): counter at the end, announced near the limit. */
+export function ReasonField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  maxLength = 500,
+}: {
+  form: UseFormReturn<T>
+  name: Path<T>
+  label: string
+  description?: string
+  maxLength?: number
+}) {
+  const t = useTranslations("common")
+  const id = useId()
+  const error = useFieldError(form, name, id)
+  const length = (useWatch({ control: form.control, name }) ?? "").length
+  const left = maxLength - length
+
+  return (
+    <Field data-invalid={error ? true : undefined}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Textarea
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(`${id}-meta`, error?.id)}
+        className="resize-none"
+        {...form.register(name)}
+      />
+      <div
+        id={`${id}-meta`}
+        className="flex gap-3 text-body-sm text-muted-foreground"
+      >
+        {description ? <span>{description}</span> : null}
+        <span
+          className={cn(
+            "tabular ms-auto",
+            left < maxLength / 10 && "text-warning",
+            left < 0 && "text-error"
+          )}
+        >
+          {length}/{maxLength}
+        </span>
+        <span aria-live="polite" className="sr-only">
+          {left <= 20 ? t("charactersLeft", { count: left }) : ""}
+        </span>
+      </div>
+      {error ? <FieldError id={error.id}>{error.text}</FieldError> : null}
+    </Field>
+  )
+}
+
+/** A select (≤ 8 options) wired to react-hook-form (components/select.md). */
+export function SelectField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  options,
+  placeholder,
+}: {
+  form: UseFormReturn<T>
+  name: Path<T>
+  label: string
+  options: { value: string; label: string }[]
+  placeholder?: string
+}) {
+  const id = useId()
+  const error = useFieldError(form, name, id)
+
+  return (
+    <Field data-invalid={error ? true : undefined}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Controller
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+          <Select
+            value={field.value}
+            onValueChange={(value) => {
+              field.onChange(value)
+              field.onBlur()
+            }}
+          >
+            <SelectTrigger
+              id={id}
+              ref={field.ref}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error?.id}
+            >
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      />
       {error ? <FieldError id={error.id}>{error.text}</FieldError> : null}
     </Field>
   )

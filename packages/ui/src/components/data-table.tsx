@@ -188,7 +188,8 @@ function DataTable<T extends object>({
         {body === undefined ? (
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id}>
+              // "group" lets row actions brighten on row hover (table.md).
+              <TableRow key={row.id} className="group">
                 {row.getAllCells().map((cell) => {
                   const align = alignOf(cell.column.columnDef.meta)
                   return (
