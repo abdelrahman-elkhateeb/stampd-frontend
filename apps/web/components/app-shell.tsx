@@ -4,6 +4,7 @@ import {
   BellIcon,
   CalendarDaysIcon,
   ChartColumnIcon,
+  ChevronRightIcon,
   CircleUserIcon,
   ClipboardCheckIcon,
   FileTextIcon,
@@ -26,7 +27,8 @@ import { LocaleSwitcher } from "@/components/locale-switcher"
 import { getDirection } from "@/i18n/locale"
 import { Link, usePathname } from "@/i18n/navigation"
 import type { Locale } from "@/i18n/routing"
-import { DEMO_USER, type Role } from "@/lib/demo-user"
+import { canAccess, matchesPath } from "@/lib/access"
+import { DEMO_USER } from "@/lib/demo-user"
 import { useFormat } from "@/lib/use-format"
 import { PersonAvatar } from "@workspace/ui/components/avatar"
 import { CountBadge } from "@workspace/ui/components/badge"
@@ -37,6 +39,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
@@ -54,14 +58,12 @@ type NavItem = { id: NavId; href: string; icon: LucideIcon; count?: number }
 
 const user = DEMO_USER
 
-const SECTIONS: {
+const ALL_SECTIONS: {
   id: keyof Messages["nav"]["section"]
-  roles: Role[]
   items: NavItem[]
 }[] = [
   {
     id: "me",
-    roles: ["employee", "manager", "admin"],
     items: [
       { id: "dashboard", href: "/", icon: LayoutDashboardIcon },
       { id: "attendance", href: "/attendance", icon: FingerprintIcon },
@@ -72,7 +74,6 @@ const SECTIONS: {
   },
   {
     id: "team",
-    roles: ["manager", "admin"],
     items: [
       {
         id: "approvals",
@@ -85,7 +86,6 @@ const SECTIONS: {
   },
   {
     id: "company",
-    roles: ["admin"],
     items: [
       { id: "employees", href: "/employees", icon: IdCardIcon },
       {
@@ -99,7 +99,13 @@ const SECTIONS: {
   },
 ]
 
-// Calendar and the company pages live under "Me" on mobile.
+// lib/access.ts decides what the role sees; sections left empty are hidden.
+const SECTIONS = ALL_SECTIONS.map((section) => ({
+  ...section,
+  items: section.items.filter((item) => canAccess(user.role, item.href)),
+})).filter((section) => section.items.length > 0)
+
+// The rest of the nav lives under "Me" on mobile (MoreNav).
 const BOTTOM_ITEMS: NavItem[] = [
   { id: "home", href: "/", icon: LayoutDashboardIcon },
   { id: "requests", href: "/requests", icon: FileTextIcon },
@@ -113,12 +119,6 @@ const BOTTOM_ITEMS: NavItem[] = [
       },
   { id: "me", href: "/me", icon: CircleUserIcon },
 ]
-
-function isActive(pathname: string, href: string) {
-  return href === "/"
-    ? pathname === "/"
-    : pathname === href || pathname.startsWith(`${href}/`)
-}
 
 function useItemLabel() {
   const t = useTranslations("nav")
@@ -156,65 +156,63 @@ export function AppSidebar() {
       </div>
 
       <nav aria-label={t("main")} className="flex flex-col gap-5">
-        {SECTIONS.filter((section) => section.roles.includes(user.role)).map(
-          (section) => (
-            <div
-              key={section.id}
-              role="group"
-              aria-labelledby={`nav-${section.id}`}
-              className="flex flex-col gap-1"
+        {SECTIONS.map((section) => (
+          <div
+            key={section.id}
+            role="group"
+            aria-labelledby={`nav-${section.id}`}
+            className="flex flex-col gap-1"
+          >
+            <h2
+              id={`nav-${section.id}`}
+              className="label-overline sr-only px-3 pb-1 xl:not-sr-only"
             >
-              <h2
-                id={`nav-${section.id}`}
-                className="label-overline sr-only px-3 pb-1 xl:not-sr-only"
-              >
-                {t(`section.${section.id}`)}
-              </h2>
-              {section.items.map((item) => {
-                const active = isActive(pathname, item.href)
-                return (
-                  <Tooltip key={item.id}>
-                    <TooltipTrigger asChild>
-                      <Link
-                        href={item.href}
-                        aria-current={active ? "page" : undefined}
-                        aria-label={label(item)}
-                        className={cn(
-                          "relative flex h-control-sm items-center justify-center gap-3 rounded-pill text-body font-medium outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sidebar-ring xl:justify-start xl:px-3",
-                          active &&
-                            "bg-sidebar-primary font-bold text-sidebar-primary-foreground shadow-[inset_0_0_0_1.5px_var(--border-strong)] hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
-                        )}
-                      >
-                        <item.icon aria-hidden className="size-5 shrink-0" />
-                        <span aria-hidden className="hidden truncate xl:inline">
-                          {t(item.id)}
-                        </span>
-                        {item.count ? (
-                          <>
-                            <CountBadge
-                              count={item.count}
-                              className="ms-auto hidden xl:inline-flex"
-                            />
-                            <span
-                              aria-hidden
-                              className="absolute end-2 top-2 size-2 rounded-pill bg-status-absent xl:hidden"
-                            />
-                          </>
-                        ) : null}
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side={rtl ? "left" : "right"}
-                      className="xl:hidden"
+              {t(`section.${section.id}`)}
+            </h2>
+            {section.items.map((item) => {
+              const active = matchesPath(pathname, item.href)
+              return (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      aria-label={label(item)}
+                      className={cn(
+                        "relative flex h-control-sm items-center justify-center gap-3 rounded-pill text-body font-medium outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-sidebar-ring xl:justify-start xl:px-3",
+                        active &&
+                          "bg-sidebar-primary font-bold text-sidebar-primary-foreground shadow-[inset_0_0_0_1.5px_var(--border-strong)] hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
+                      )}
                     >
-                      {label(item)}
-                    </TooltipContent>
-                  </Tooltip>
-                )
-              })}
-            </div>
-          )
-        )}
+                      <item.icon aria-hidden className="size-5 shrink-0" />
+                      <span aria-hidden className="hidden truncate xl:inline">
+                        {t(item.id)}
+                      </span>
+                      {item.count ? (
+                        <>
+                          <CountBadge
+                            count={item.count}
+                            className="ms-auto hidden xl:inline-flex"
+                          />
+                          <span
+                            aria-hidden
+                            className="absolute end-2 top-2 size-2 rounded-pill bg-status-absent xl:hidden"
+                          />
+                        </>
+                      ) : null}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side={rtl ? "left" : "right"}
+                    className="xl:hidden"
+                  >
+                    {label(item)}
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   )
@@ -232,7 +230,7 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(4.5rem+env(safe-area-inset-bottom))] grid-cols-4 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {BOTTOM_ITEMS.map((item) => {
-        const active = isActive(pathname, item.href)
+        const active = matchesPath(pathname, item.href)
         return (
           <Link
             key={item.id}
@@ -274,9 +272,13 @@ export function TopBar() {
   const pathname = usePathname()
   const home = pathname === "/"
   const current = SECTIONS.flatMap((section) => section.items).find((item) =>
-    isActive(pathname, item.href)
+    matchesPath(pathname, item.href)
   )
-  const title = current ? tNav(current.id) : ""
+  const title = current
+    ? tNav(current.id)
+    : matchesPath(pathname, "/me")
+      ? tNav("profile")
+      : ""
 
   return (
     <header
@@ -388,6 +390,8 @@ function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <ThemeMenuGroup />
+        <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" asChild>
           <Link href="/login">
             <LogOutIcon aria-hidden className="flip-rtl" />
@@ -396,5 +400,73 @@ function UserMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+export const THEMES = ["system", "light", "dark"] as const
+
+function ThemeMenuGroup() {
+  const t = useTranslations("theme")
+  const { theme = "system", setTheme } = useTheme()
+  return (
+    <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+      <DropdownMenuLabel className="label-overline">
+        {t("label")}
+      </DropdownMenuLabel>
+      {THEMES.map((value) => (
+        <DropdownMenuRadioItem key={value} value={value}>
+          {t(value)}
+        </DropdownMenuRadioItem>
+      ))}
+    </DropdownMenuRadioGroup>
+  )
+}
+
+/** Mobile only, on the Me page: every nav item the bottom bar doesn't carry. */
+export function MoreNav() {
+  const t = useTranslations("nav")
+  const label = useItemLabel()
+  const bottom = new Set(BOTTOM_ITEMS.map((item) => item.href))
+  const sections = SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !bottom.has(item.href)),
+  })).filter((section) => section.items.length > 0)
+
+  return (
+    <nav aria-label={t("more")} className="flex flex-col gap-5 md:hidden">
+      {sections.map((section) => (
+        <div
+          key={section.id}
+          role="group"
+          aria-labelledby={`more-${section.id}`}
+          className="flex flex-col"
+        >
+          <h2 id={`more-${section.id}`} className="label-overline pb-2">
+            {t(`section.${section.id}`)}
+          </h2>
+          <ul className="divide-y overflow-hidden rounded-lg border bg-card">
+            {section.items.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  aria-label={label(item)}
+                  className="flex min-h-12 items-center gap-3 px-4 text-body font-medium outline-none hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                >
+                  <item.icon aria-hidden className="size-5 shrink-0" />
+                  <span aria-hidden className="flex-1 truncate">
+                    {t(item.id)}
+                  </span>
+                  {item.count ? <CountBadge count={item.count} /> : null}
+                  <ChevronRightIcon
+                    aria-hidden
+                    className="flip-rtl size-4 text-subtle-foreground"
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
   )
 }

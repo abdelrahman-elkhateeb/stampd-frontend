@@ -1,4 +1,4 @@
-import type { Weekday } from "@workspace/ui/components/date-picker"
+import type { PlainDate, Weekday } from "@workspace/ui/components/date-picker"
 
 export type Role = "employee" | "manager" | "admin"
 
@@ -7,6 +7,12 @@ export const DEMO_USER = {
   id: "u-sara",
   name: "Sara Al-Harbi",
   email: "sara@demo.stampd.app",
+  phone: "+966 55 123 4567",
+  jobTitle: "HR Manager",
+  department: "People Operations",
+  manager: "Khalid Al-Otaibi",
+  employeeCode: "NT-0042",
+  joinedOn: "2022-03-14" as PlainDate,
   // Admin sees every nav section; change it to preview the other roles.
   role: "admin" as Role,
   company: {

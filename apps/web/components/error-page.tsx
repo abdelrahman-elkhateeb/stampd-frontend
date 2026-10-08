@@ -8,22 +8,26 @@ import { Link } from "@/i18n/navigation"
 import { Button } from "@workspace/ui/components/button"
 import { ErrorState } from "@workspace/ui/components/error-state"
 
-const STATUS = { notFound: 404, crash: 500 } as const
+const STATUS = { forbidden: 403, notFound: 404, crash: 500 } as const
 
 export function ErrorPage({
   kind,
   code,
   onRetry,
+  inShell,
 }: {
   kind: keyof typeof STATUS
   code?: string
   onRetry?: () => void
+  /** Rendered inside the app shell, which already has the <main>. */
+  inShell?: boolean
 }) {
   const t = useTranslations("errors")
   const router = useRouter()
+  const Root = inShell ? "div" : "main"
 
   return (
-    <main className="flex min-h-svh items-center">
+    <Root className={inShell ? "py-8 md:py-16" : "flex min-h-svh items-center"}>
       <ErrorState
         variant="page"
         status={STATUS[kind]}
@@ -51,6 +55,6 @@ export function ErrorPage({
           </>
         }
       />
-    </main>
+    </Root>
   )
 }

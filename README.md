@@ -96,6 +96,8 @@ Preview deploys run on Vercel: connect the repo in Vercel with **Root Directory*
 
 ## Adding shadcn components
 
+**Rule: shadcn first.** Before building anything for a new feature (a component, a sub-part such as menu radio items, or a behaviour such as theming), check whether shadcn already has it ([components](https://ui.shadcn.com/docs/components), [dark mode](https://ui.shadcn.com/docs/dark-mode/next)) and what is already in `packages/ui/src/components`. If shadcn has it, add it with the CLI and restyle it; write it by hand only when shadcn has nothing for it, and say why in the PR.
+
 From the repo root:
 
 ```bash

@@ -1,7 +1,9 @@
 import createMiddleware from "next-intl/middleware"
 import { NextResponse, type NextRequest } from "next/server"
 
-import { routing } from "@/i18n/routing"
+import { routing, type Locale } from "@/i18n/routing"
+import { canAccess } from "@/lib/access"
+import { DEMO_USER } from "@/lib/demo-user"
 
 const intlMiddleware = createMiddleware(routing)
 
@@ -13,6 +15,15 @@ export default function proxy(request: NextRequest) {
     return NextResponse.rewrite(
       new URL(`/${locale}/__dev-routes-disabled`, request.url)
     )
+  }
+  // A role without access gets the no-access page at the same URL; the page never renders.
+  // ponytail: role from the demo user; read it from the session once BE-03 exists.
+  const rest = request.nextUrl.pathname.slice(locale!.length + 1) || "/"
+  if (
+    routing.locales.includes(locale as Locale) &&
+    !canAccess(DEMO_USER.role, rest)
+  ) {
+    return NextResponse.rewrite(new URL(`/${locale}/no-access`, request.url))
   }
   return intlMiddleware(request)
 }
