@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslations } from "next-intl"
-import { useEffect, useId, useSyncExternalStore } from "react"
+import { useEffect, useId } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
@@ -14,6 +14,7 @@ import {
 import { Link, useRouter } from "@/i18n/navigation"
 import { codeErrorMap } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
+import { useTimeZones } from "@/lib/time-zones"
 import { Button } from "@workspace/ui/components/button"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { inputClassName } from "@workspace/ui/components/input"
@@ -40,21 +41,6 @@ const SignupBody = z
 // Shown until the browser's own zone is known.
 const FALLBACK_ZONE = "Asia/Riyadh"
 const SERVER_ZONES = [FALLBACK_ZONE]
-const noSubscribe = () => () => {}
-let cachedZones: string[] | undefined
-
-// Node and the browser can list different zones, so the full list is client-only,
-// with the browser's own zone first.
-function browserZones() {
-  if (!cachedZones) {
-    const own = Intl.DateTimeFormat().resolvedOptions().timeZone
-    cachedZones = [
-      own,
-      ...Intl.supportedValuesOf("timeZone").filter((zone) => zone !== own),
-    ]
-  }
-  return cachedZones
-}
 
 export function SignupForm() {
   const t = useTranslations("auth.signup")
@@ -72,11 +58,7 @@ export function SignupForm() {
     },
   })
 
-  const zones = useSyncExternalStore(
-    noSubscribe,
-    browserZones,
-    () => SERVER_ZONES
-  )
+  const zones = useTimeZones(SERVER_ZONES)
 
   // Select the browser's zone once its <option> exists.
   useEffect(() => {

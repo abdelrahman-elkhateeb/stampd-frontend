@@ -21,10 +21,11 @@ import {
   FieldLabel,
 } from "@workspace/ui/components/field"
 import { Input } from "@workspace/ui/components/input"
+import { NumberStepper } from "@workspace/ui/components/number-stepper"
 import { cn } from "@workspace/ui/lib/utils"
 
 /** The translated error for a field. Messages are codes (see lib/forms.ts), translated here. */
-function useFieldError<T extends FieldValues>(
+export function useFieldError<T extends FieldValues>(
   form: UseFormReturn<T>,
   name: Path<T>,
   id: string
@@ -128,7 +129,7 @@ export function PasswordField<T extends FieldValues>({
           aria-describedby={describedBy(rulesId, capsId, error?.id)}
           // The input stays LTR in RTL pages, so its own start is where the page toggle sits.
           className={cn(
-            "pe-12 rtl:pe-3.5 rtl:ps-12",
+            "pe-12 rtl:ps-12 rtl:pe-3.5",
             !shown && value && "text-lg tracking-[0.2em]"
           )}
           onFocus={() => setFocused(true)}
@@ -257,6 +258,58 @@ export function CheckboxField<T extends FieldValues>({
           {label}
         </label>
       </div>
+      {error ? <FieldError id={error.id}>{error.text}</FieldError> : null}
+    </Field>
+  )
+}
+
+/** A number stepper wired to react-hook-form (components/number-stepper.md). */
+export function StepperField<T extends FieldValues>({
+  form,
+  name,
+  label,
+  description,
+  unit,
+  min,
+  max,
+}: {
+  form: UseFormReturn<T>
+  name: Path<T>
+  label: string
+  description?: string
+  unit?: string
+  min?: number
+  max?: number
+}) {
+  const t = useTranslations("common")
+  const id = useId()
+  const error = useFieldError(form, name, id)
+  const descriptionId = description ? `${id}-description` : undefined
+
+  return (
+    <Field data-invalid={error ? true : undefined}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Controller
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+          <NumberStepper
+            id={id}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            min={min}
+            max={max}
+            unit={unit}
+            labels={{ increase: t("increase"), decrease: t("decrease") }}
+            invalid={Boolean(error)}
+            describedBy={describedBy(descriptionId, error?.id)}
+          />
+        )}
+      />
+      {description ? (
+        <FieldDescription id={descriptionId}>{description}</FieldDescription>
+      ) : null}
       {error ? <FieldError id={error.id}>{error.text}</FieldError> : null}
     </Field>
   )
