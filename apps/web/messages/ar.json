@@ -16,7 +16,8 @@
     "label": "المظهر",
     "light": "فاتح",
     "dark": "داكن",
-    "system": "حسب النظام"
+    "system": "حسب النظام",
+    "toggle": "تبديل المظهر"
   },
   "errors": {
     "goBack": "رجوع",
@@ -123,5 +124,38 @@
   "datePicker": {
     "placeholder": "اختر تاريخًا",
     "rangePlaceholder": "اختر التواريخ"
+  },
+  "nav": {
+    "main": "التنقل الرئيسي",
+    "withCount": "{label}، {count} بانتظار الإجراء",
+    "section": {
+      "me": "أنا",
+      "team": "فريقي",
+      "company": "الشركة"
+    },
+    "dashboard": "الرئيسية",
+    "attendance": "الحضور",
+    "leave": "الإجازات",
+    "requests": "الطلبات",
+    "calendar": "التقويم",
+    "approvals": "الموافقات",
+    "myTeam": "الفريق",
+    "employees": "الموظفون",
+    "attendanceReview": "مراجعة الحضور",
+    "reports": "التقارير",
+    "settings": "الإعدادات",
+    "home": "الرئيسية",
+    "me": "أنا",
+    "profile": "الملف الشخصي"
+  },
+  "roles": {
+    "employee": "موظف",
+    "manager": "مدير",
+    "admin": "مسؤول الموارد البشرية"
+  },
+  "topBar": {
+    "greeting": "أهلًا، {name}",
+    "notifications": "{count, plural, =0 {الإشعارات} other {الإشعارات، # غير مقروءة}}",
+    "accountMenu": "قائمة الحساب"
   }
 }

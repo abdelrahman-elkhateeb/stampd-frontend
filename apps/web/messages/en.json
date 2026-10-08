@@ -16,7 +16,8 @@
     "label": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "toggle": "Toggle theme"
   },
   "errors": {
     "goBack": "Go back",
@@ -123,5 +124,38 @@
   "datePicker": {
     "placeholder": "Choose a date",
     "rangePlaceholder": "Choose dates"
+  },
+  "nav": {
+    "main": "Main",
+    "withCount": "{label}, {count} pending",
+    "section": {
+      "me": "Me",
+      "team": "My team",
+      "company": "Company"
+    },
+    "dashboard": "Dashboard",
+    "attendance": "Attendance",
+    "leave": "Leave",
+    "requests": "Requests",
+    "calendar": "Calendar",
+    "approvals": "Approvals",
+    "myTeam": "Team",
+    "employees": "Employees",
+    "attendanceReview": "Attendance review",
+    "reports": "Reports",
+    "settings": "Settings",
+    "home": "Home",
+    "me": "Me",
+    "profile": "Profile"
+  },
+  "roles": {
+    "employee": "Employee",
+    "manager": "Manager",
+    "admin": "HR admin"
+  },
+  "topBar": {
+    "greeting": "Hello, {name}",
+    "notifications": "{count, plural, =0 {Notifications} other {Notifications, # unread}}",
+    "accountMenu": "Account menu"
   }
 }

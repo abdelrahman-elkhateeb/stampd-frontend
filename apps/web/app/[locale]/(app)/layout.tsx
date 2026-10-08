@@ -1,41 +1,17 @@
-import { getTranslations } from "next-intl/server"
-import { LogOutIcon } from "lucide-react"
+import { AppSidebar, BottomNav, TopBar } from "@/components/app-shell"
 
-import { LocaleSwitcher } from "@/components/locale-switcher"
-import { Link } from "@/i18n/navigation"
-import { DEMO_USER } from "@/lib/demo-user"
-import { Button } from "@workspace/ui/components/button"
-import { Wordmark } from "@workspace/ui/components/wordmark"
-
-// Placeholder shell until FE-03 builds the real navigation.
-export default async function AppLayout({
-  children,
-}: LayoutProps<"/[locale]">) {
-  const t = await getTranslations()
-
+export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
   return (
-    <>
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3">
-        <Wordmark>{t("app.name")}</Wordmark>
-        <div className="flex items-center gap-3">
-          <LocaleSwitcher />
-          <span className="hidden text-body-sm text-muted-foreground sm:inline">
-            <bdi>{DEMO_USER.name}</bdi>
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label={t("auth.logout")}
-            asChild
-          >
-            <Link href="/login">
-              <LogOutIcon aria-hidden className="flip-rtl" />
-              <span className="hidden sm:inline">{t("auth.logout")}</span>
-            </Link>
-          </Button>
-        </div>
-      </header>
-      {children}
-    </>
+    <div className="flex min-h-svh bg-background">
+      <AppSidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        {/* Mobile: a 480px column above the bottom nav. Desktop: page padding, 1440 max. */}
+        <main className="mx-auto w-full flex-1 px-4 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:max-w-[30rem] md:max-w-[90rem] md:p-6 lg:p-8">
+          {children}
+        </main>
+      </div>
+      <BottomNav />
+    </div>
   )
 }
