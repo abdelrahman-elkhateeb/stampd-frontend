@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import { cn } from "@workspace/ui/lib/utils"
 import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui"
 

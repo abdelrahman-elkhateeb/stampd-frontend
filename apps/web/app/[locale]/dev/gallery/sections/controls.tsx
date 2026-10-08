@@ -27,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select"
+import { Stepper } from "@workspace/ui/components/stepper"
+import { Textarea } from "@workspace/ui/components/textarea"
 
 import { Demo } from "../demo"
 
@@ -236,6 +238,37 @@ export function ControlsSection() {
             value={null}
             onChange={() => {}}
             disabled
+          />
+        </div>
+      </Demo>
+
+      <Demo title="Textarea · default, error, disabled">
+        <Textarea aria-label="Reason" className="w-72" />
+        <Textarea
+          aria-label="Reason"
+          aria-invalid
+          defaultValue="Too short"
+          className="w-72"
+        />
+        <Textarea aria-label="Reason" disabled className="w-72" />
+      </Demo>
+
+      <Demo title="Stepper · CSV import, step 2 (below md: one-line header)">
+        <div className="w-full">
+          <Stepper
+            label="Import steps"
+            steps={[
+              { id: "upload", title: "Upload", subtitle: "team.csv" },
+              { id: "preview", title: "Preview" },
+              { id: "confirm", title: "Confirm" },
+              { id: "result", title: "Result" },
+            ]}
+            currentId="preview"
+            completed={["upload"]}
+            onStepClick={() => {}}
+            stepOf={(index, count, title) =>
+              `Step ${index} of ${count} · ${title}`
+            }
           />
         </div>
       </Demo>
