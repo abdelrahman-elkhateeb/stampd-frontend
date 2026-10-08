@@ -108,7 +108,13 @@
     "TOO_LONG": "This is too long",
     "EMAIL_TAKEN": "An account with this email already exists",
     "WEAK_PASSWORD": "Choose a password that meets all the rules",
-    "MUST_ACCEPT": "Accept the terms to continue"
+    "MUST_ACCEPT": "Accept the terms to continue",
+    "NEGATIVE": "This can't be negative",
+    "GRACE_MAX": "Grace can be up to 120 minutes",
+    "END_BEFORE_START": "End time must be after the start time",
+    "NEGATIVE_ALLOWANCE": "Allowance can't be negative",
+    "NAME_TAKEN": "Another leave type already has this name",
+    "HOLIDAY_EXISTS": "There's already a holiday on this date"
   },
   "status": {
     "present": "Present",
@@ -152,7 +158,9 @@
     "loading": "Loading…",
     "choose": "Choose",
     "apply": "Apply",
-    "clear": "Clear"
+    "clear": "Clear",
+    "increase": "Increase",
+    "decrease": "Decrease"
   },
   "table": {
     "sortedAscending": "sorted ascending",
@@ -298,6 +306,215 @@
       "new": "New password",
       "submit": "Change password",
       "done": "Password changed. Other devices were signed out."
+    }
+  },
+  "unsavedChanges": {
+    "title": "Discard changes?",
+    "description": "You have changes that aren't saved. If you leave now, they'll be lost.",
+    "keep": "Keep editing",
+    "discard": "Discard changes"
+  },
+  "settings": {
+    "title": "Company settings",
+    "description": "Your working week, holidays, leave types and the requests employees can make.",
+    "sections": "Settings sections",
+    "tabs": {
+      "company": "Company",
+      "holidays": "Holidays",
+      "leaveTypes": "Leave types",
+      "requestTypes": "Request types"
+    },
+    "company": {
+      "save": "Save changes",
+      "discard": "Discard",
+      "unsaved": "You have unsaved changes",
+      "saved": "Settings saved. Everyone sees them from their next load.",
+      "dayLetters": "Su,Mo,Tu,We,Th,Fr,Sa",
+      "profile": {
+        "title": "Company profile",
+        "description": "Shown in the sidebar, on invites and in emails.",
+        "name": "Company name",
+        "timezone": "Timezone",
+        "timezoneHint": "All times are in company time. A change applies to attendance from tomorrow.",
+        "accent": "Accent colour",
+        "accentHint": "Used only for the ring around your logo.",
+        "outlineLight": "Shown with an outline in light mode so it stays visible.",
+        "outlineDark": "Shown with an outline in dark mode so it stays visible."
+      },
+      "logo": {
+        "label": "Logo",
+        "choose": "Choose a logo",
+        "replace": "Replace logo",
+        "remove": "Remove",
+        "hint": "PNG, SVG or JPG · square · up to 1 MB",
+        "done": "Logo updated",
+        "wrongType": "{file} isn't supported. Use PNG, SVG or JPG.",
+        "tooBig": "{file} is larger than 1 MB.",
+        "on": {
+          "light": "Light mode",
+          "dark": "Dark mode"
+        }
+      },
+      "calendar": {
+        "title": "Work calendar",
+        "description": "Decides working days, lateness and leave counts for everyone.",
+        "workingDays": "Working days",
+        "daysSummary": "{count, plural, one {# working day} other {# working days}} · {days}",
+        "pickOneDay": "Pick at least one working day",
+        "appliesNextLoad": "Applies to everyone from their next load.",
+        "workStart": "Work starts",
+        "workEnd": "Work ends",
+        "grace": "Late grace",
+        "graceHint": "Check-ins within this many minutes after the start time aren't late.",
+        "minutesUnit": "min",
+        "minutes": "{count, plural, one {# minute} other {# minutes}}",
+        "leaveYear": "Leave year starts in",
+        "leaveYearHint": "Balances reset and allowances renew on the 1st of this month."
+      },
+      "history": {
+        "title": "Settings history",
+        "description": "Every change to company settings, newest first.",
+        "action": "Changed company settings",
+        "manual": "Manual",
+        "was": "was",
+        "now": "now",
+        "changedTo": "changed to",
+        "showAll": "Show all ({count})",
+        "fields": {
+          "name": "Company name",
+          "timezone": "Timezone",
+          "accent": "Accent colour",
+          "workingDays": "Working days",
+          "workStart": "Work starts",
+          "workEnd": "Work ends",
+          "graceMinutes": "Late grace",
+          "leaveYearStartMonth": "Leave year starts"
+        }
+      }
+    },
+    "holidays": {
+      "title": "Public holidays",
+      "description": "Holidays aren't working days: they don't count as leave and nobody is marked absent.",
+      "year": "Year",
+      "add": "Add holiday",
+      "caption": "Public holidays in {year}",
+      "date": "Date",
+      "name": "Name",
+      "actions": "Actions",
+      "actionsFor": "Actions for {name}",
+      "edit": "Edit",
+      "delete": "Delete",
+      "addTitle": "Add a holiday",
+      "editTitle": "Edit holiday",
+      "dialogDescription": "We'll check for approved requests on that day before saving.",
+      "saveNew": "Add holiday",
+      "saveEdit": "Save holiday",
+      "added": "{name} added",
+      "updated": "{name} updated",
+      "deleted": "{name} deleted",
+      "empty": {
+        "title": "No holidays in {year} yet",
+        "body": "Add your public holidays so leave and attendance skip them."
+      },
+      "impact": {
+        "title": "{count, plural, one {# approved request is on this day} other {# approved requests are on this day}}",
+        "description": "They stay as they are. Open each one to cancel it with a reason, or leave it unchanged.",
+        "back": "Go back",
+        "confirm": "Add holiday anyway"
+      },
+      "deleteDialog": {
+        "title": "Delete {name}?",
+        "description": "{date} becomes a working day again for attendance and leave.",
+        "keep": "Keep holiday",
+        "confirm": "Delete holiday"
+      }
+    },
+    "leaveTypes": {
+      "title": "Leave types",
+      "description": "What employees can take, and how each type is counted. All leave shares one colour; the icon tells types apart.",
+      "add": "New leave type",
+      "addTitle": "New leave type",
+      "editTitle": "Edit {name}",
+      "dialogDescription": "A change to the yearly allowance applies from the next leave year. For this year, adjust balances per employee.",
+      "name": "Name",
+      "icon": "Icon",
+      "iconPlaceholder": "Choose an icon",
+      "iconInUse": "In use by {name}",
+      "iconFootnote": "Icons already used by other leave types are marked In use.",
+      "paidLabel": "Paid leave",
+      "trackedLabel": "Track a balance",
+      "allowance": "Default yearly allowance",
+      "allowanceHint": "Applies from the next leave year.",
+      "daysUnit": "days",
+      "allowNegativeLabel": "Allow a negative balance",
+      "halfDaysLabel": "Half days allowed",
+      "reasonLabel": "Reason required",
+      "saveNew": "Create leave type",
+      "saveEdit": "Save changes",
+      "created": "{name} created",
+      "updated": "{name} updated",
+      "archived": "{name} archived",
+      "deleted": "{name} deleted",
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "allowanceShort": "{count, plural, one {# day a year} other {# days a year}}",
+      "noBalance": "No balance",
+      "halfDaysShort": "Half days",
+      "reasonShort": "Reason required",
+      "editFor": "Edit {name}",
+      "moreFor": "More actions for {name}",
+      "archive": "Archive",
+      "delete": "Delete",
+      "keep": "Keep it",
+      "archivedTitle": "Archived",
+      "archivedBadge": "Archived",
+      "archiveDialog": {
+        "title": "Archive {name}?",
+        "description": "It's been used, so it can't be deleted. Employees can't request it any more; past requests and balances stay.",
+        "confirm": "Archive leave type"
+      },
+      "deleteDialog": {
+        "title": "Delete {name}?",
+        "description": "Nobody has used it yet, so it's removed completely.",
+        "confirm": "Delete leave type"
+      },
+      "icons": {
+        "tree-palm": "Palm tree",
+        "thermometer": "Thermometer",
+        "siren": "Siren",
+        "banknote": "Banknote",
+        "landmark": "Landmark",
+        "baby": "Baby",
+        "calendar-plus": "Calendar plus",
+        "heart": "Heart",
+        "graduation-cap": "Graduation cap",
+        "users": "People",
+        "moon": "Moon",
+        "briefcase": "Briefcase"
+      }
+    },
+    "requestTypes": {
+      "title": "Request types",
+      "description": "Turn off what your company doesn't use. Changes save at once and apply to everyone.",
+      "hidden": "Hidden from the request form.",
+      "types": {
+        "wfh": {
+          "name": "Work from home",
+          "approver": "Approved by the employee's manager."
+        },
+        "correction": {
+          "name": "Attendance correction",
+          "approver": "Approved by HR."
+        },
+        "permission": {
+          "name": "Permission / early leave",
+          "approver": "Approved by the employee's manager."
+        },
+        "trip": {
+          "name": "Business trip",
+          "approver": "Approved by the manager, then HR."
+        }
+      }
     }
   }
 }
