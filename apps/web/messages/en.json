@@ -34,6 +34,10 @@
     "crash": {
       "title": "This page didn't load",
       "body": "Something went wrong on our side. Try again, or reload the page."
+    },
+    "forbidden": {
+      "title": "You don't have access",
+      "body": "This page is for another role. If you need it, ask your HR admin."
     }
   },
   "auth": {
@@ -201,7 +205,8 @@
     "settings": "Settings",
     "home": "Home",
     "me": "Me",
-    "profile": "Profile"
+    "profile": "Profile",
+    "more": "More"
   },
   "roles": {
     "employee": "Employee",
@@ -261,6 +266,38 @@
         "title": "Invite employees",
         "subtitle": "No invites sent"
       }
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "description": "Your details, photo, password and preferences.",
+    "preferences": "Preferences",
+    "photo": {
+      "change": "Change photo",
+      "hint": "JPG or PNG · up to 2 MB",
+      "done": "Photo updated",
+      "wrongType": "{file} isn't supported. Use JPG or PNG.",
+      "tooBig": "{file} is larger than 2 MB."
+    },
+    "details": {
+      "title": "Details",
+      "description": "Ask HR to change anything except your phone.",
+      "email": "Email",
+      "employeeCode": "Employee code",
+      "department": "Department",
+      "manager": "Manager",
+      "joined": "Joined",
+      "phone": "Phone",
+      "savePhone": "Save phone",
+      "phoneSaved": "Phone saved"
+    },
+    "password": {
+      "title": "Change password",
+      "description": "You'll stay signed in here; other devices are signed out.",
+      "current": "Current password",
+      "new": "New password",
+      "submit": "Change password",
+      "done": "Password changed. Other devices were signed out."
     }
   }
 }
