@@ -39,7 +39,10 @@ function LocaleLinks({
   const pathname = usePathname()
 
   return (
-    <nav aria-label={t("label")} className={cn("flex gap-2", className)}>
+    <nav
+      aria-label={t("label")}
+      className={cn("flex w-fit gap-0.5 rounded-pill bg-muted p-0.5", className)}
+    >
       {routing.locales.map((locale) => (
         <Link
           key={locale}
@@ -48,7 +51,7 @@ function LocaleLinks({
           // Each language names itself, so the label is read with the right voice.
           lang={locale}
           aria-current={locale === current ? "true" : undefined}
-          className="rounded-md px-2 py-1 text-sm underline-offset-4 hover:underline aria-[current=true]:font-semibold aria-[current=true]:underline"
+          className="rounded-pill px-3 py-1 text-body-sm font-medium text-subtle-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-[current=true]:bg-inverse aria-[current=true]:font-bold aria-[current=true]:text-inverse-foreground"
         >
           {t(locale)}
         </Link>
