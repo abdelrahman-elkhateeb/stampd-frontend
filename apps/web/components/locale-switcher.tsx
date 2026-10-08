@@ -41,7 +41,10 @@ function LocaleLinks({
   return (
     <nav
       aria-label={t("label")}
-      className={cn("flex w-fit gap-0.5 rounded-pill bg-muted p-0.5", className)}
+      className={cn(
+        "flex w-fit gap-0.5 rounded-pill bg-muted p-0.5",
+        className
+      )}
     >
       {routing.locales.map((locale) => (
         <Link

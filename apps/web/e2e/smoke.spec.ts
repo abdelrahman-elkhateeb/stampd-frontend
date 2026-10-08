@@ -50,6 +50,10 @@ test("nothing scrolls sideways at 360px", async ({ page }) => {
     "/ar/does-not-exist",
     "/en/login",
     "/ar/login",
+    "/ar/signup",
+    "/ar/forgot-password",
+    "/ar/reset-password/demo-token",
+    "/ar/invite/demo-token",
   ]) {
     await page.goto(path)
     const overflow = await page.evaluate(

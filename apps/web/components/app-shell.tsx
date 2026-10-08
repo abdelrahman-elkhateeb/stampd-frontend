@@ -54,7 +54,11 @@ type NavItem = { id: NavId; href: string; icon: LucideIcon; count?: number }
 
 const user = DEMO_USER
 
-const SECTIONS: { id: keyof Messages["nav"]["section"]; roles: Role[]; items: NavItem[] }[] = [
+const SECTIONS: {
+  id: keyof Messages["nav"]["section"]
+  roles: Role[]
+  items: NavItem[]
+}[] = [
   {
     id: "me",
     roles: ["employee", "manager", "admin"],
@@ -244,7 +248,7 @@ export function BottomNav() {
                   count={item.count}
                   max={9}
                   variant="alert"
-                  className="absolute -top-1 end-2"
+                  className="absolute end-2 -top-1"
                 />
               ) : null}
             </span>
@@ -296,10 +300,7 @@ export function TopBar() {
         ) : null}
         {/* Context only: each page owns its h1 in the page header. */}
         <p
-          className={cn(
-            "truncate text-h4 font-bold",
-            home && "max-md:hidden"
-          )}
+          className={cn("truncate text-h4 font-bold", home && "max-md:hidden")}
         >
           {title}
         </p>
@@ -349,7 +350,7 @@ function NotificationBell() {
           count={count}
           max={9}
           variant="alert"
-          className="absolute -top-0.5 -end-0.5"
+          className="absolute -end-0.5 -top-0.5"
         />
       </Link>
     </Button>

@@ -41,15 +41,70 @@
       "title": "Log in to Stampd",
       "email": "Work email",
       "password": "Password",
-      "submit": "Log in"
+      "submit": "Log in",
+      "newCompany": "New to Stampd?",
+      "signUp": "Register your company",
+      "sessionExpired": "Your session has ended. Log in again to pick up where you left off.",
+      "errors": {
+        "incorrect": "Email or password is incorrect",
+        "deactivated": "Your account is no longer active. Ask your HR admin if you think this is a mistake.",
+        "locked": "Too many attempts. Wait 15 minutes, then try again."
+      }
     },
-    "logout": "Log out"
+    "logout": "Log out",
+    "backToLogin": "Back to log in",
+    "signup": {
+      "title": "Create your company account",
+      "description": "Set up Stampd for your team in a few minutes.",
+      "companyName": "Company name",
+      "name": "Your name",
+      "email": "Work email",
+      "password": "Password",
+      "timezone": "Company timezone",
+      "terms": "I agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "logIn": "Log in",
+      "logInInstead": "Log in instead"
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "description": "Enter your work email and we’ll send you a link to choose a new password.",
+      "email": "Work email",
+      "submit": "Send reset link",
+      "sent": "If an account exists for <b>{email}</b>, we’ve sent a link to reset your password. It works for 1 hour."
+    },
+    "reset": {
+      "title": "Choose a new password",
+      "description": "You’ll be logged in once it’s saved.",
+      "password": "New password",
+      "submit": "Save and log in",
+      "done": "Password updated",
+      "expiredTitle": "This link has expired",
+      "expiredBody": "Reset links work for 1 hour. Ask for a new one and use it straight away.",
+      "newLink": "Send a new link"
+    },
+    "invite": {
+      "metaTitle": "Accept invite",
+      "title": "Join {company}",
+      "description": "Check your name and choose a password to get started.",
+      "email": "Work email",
+      "name": "Your name",
+      "nameHint": "This is how your team will see you.",
+      "password": "Password",
+      "submit": "Join and continue",
+      "expiredTitle": "This invite has expired",
+      "expiredBody": "Ask your HR admin to send you a new invite."
+    }
   },
   "fieldErrors": {
     "REQUIRED": "Fill in this field",
     "INVALID_FORMAT": "Check the format of this field",
     "TOO_SHORT": "This is too short",
-    "TOO_LONG": "This is too long"
+    "TOO_LONG": "This is too long",
+    "EMAIL_TAKEN": "An account with this email already exists",
+    "WEAK_PASSWORD": "Choose a password that meets all the rules",
+    "MUST_ACCEPT": "Accept the terms to continue"
   },
   "status": {
     "present": "Present",
@@ -157,5 +212,55 @@
     "greeting": "Hello, {name}",
     "notifications": "{count, plural, =0 {Notifications} other {Notifications, # unread}}",
     "accountMenu": "Account menu"
+  },
+  "password": {
+    "show": "Show password",
+    "capsLock": "Caps Lock is on",
+    "forgot": "Forgot password?",
+    "scoreOf": "{score} of 4",
+    "ruleMet": "met",
+    "ruleNotMet": "not met",
+    "strength": {
+      "tooWeak": "Too weak",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "rules": {
+      "length": "At least 10 characters",
+      "notCommon": "Not a common password",
+      "notPersonal": "Doesn’t contain your name or email"
+    }
+  },
+  "setup": {
+    "title": "Set up your workspace",
+    "progress": "{done} of {total} done · everything is optional",
+    "valueText": "{done} of {total} steps done",
+    "dismiss": "Hide setup checklist",
+    "stepDone": "{step}, done",
+    "stepTodo": "{step}, not done",
+    "steps": {
+      "settings": {
+        "title": "Confirm company settings",
+        "subtitle": "Working days, hours and timezone"
+      },
+      "holidays": {
+        "title": "Add holidays",
+        "subtitle": "No holidays added yet"
+      },
+      "leaveTypes": {
+        "title": "Review leave types",
+        "subtitle": "6 default types ready"
+      },
+      "employees": {
+        "title": "Add employees",
+        "subtitle": "Only you so far"
+      },
+      "invites": {
+        "title": "Invite employees",
+        "subtitle": "No invites sent"
+      }
+    }
   }
 }
