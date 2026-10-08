@@ -293,4 +293,36 @@ function FlagChip({
   )
 }
 
-export { FlagChip, StatusChip }
+/** The calendar `bar` size: a 4px bar (dashed when it needs action) over a 12px icon. */
+function StatusBar({
+  status,
+  className,
+}: {
+  status: AttendanceStatus
+  className?: string
+}) {
+  const meta = STATUS_META[status]
+  const Icon = meta.icon
+  return (
+    <span
+      aria-hidden
+      data-slot="status-bar"
+      data-status={status}
+      className={cn(
+        "flex w-full flex-col items-center gap-1",
+        meta.tone.split(" ").find((tone) => tone.startsWith("text-")),
+        className
+      )}
+    >
+      <span
+        className={cn(
+          "w-full border-t-4 border-current",
+          meta.dashed && "border-dashed"
+        )}
+      />
+      <Icon className={cn("size-3", meta.flip && "flip-rtl")} />
+    </span>
+  )
+}
+
+export { FlagChip, StatusBar, StatusChip }

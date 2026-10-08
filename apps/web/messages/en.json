@@ -774,5 +774,90 @@
         "confirm": "Delete department"
       }
     }
+  },
+  "attendance": {
+    "title": "Attendance",
+    "description": "Check in and out, and see your days.",
+    "today": {
+      "title": "Today · {date}",
+      "loading": "Loading today",
+      "now": "Company time",
+      "worked": "Worked today",
+      "workedLabel": "Worked {duration}",
+      "shift": "Shift {start}–{end} · late after {grace}",
+      "progressLabel": "Shift progress",
+      "progress": "{percent}% of shift",
+      "sessions": "Today's sessions",
+      "to": "to",
+      "ongoing": "Now",
+      "noCheckout": "No check-out",
+      "checkIn": "Check in",
+      "checkOut": "Check out",
+      "checkInAgain": "Check in again",
+      "checkInAnyway": "Check in anyway",
+      "checkInOffline": "Check in when online",
+      "checkOutOffline": "Check out when online",
+      "checkingIn": "Checking in…",
+      "checkingOut": "Checking out…",
+      "checkedInToast": "Checked in at {time}",
+      "checkedOutToast": "Checked out at {time}",
+      "checkedInAnnouncement": "Checked in, {status, select, late {late} other {present}}",
+      "error": "Couldn't reach the server. Nothing was recorded.",
+      "offline": "You're offline. Check-in will send when you reconnect.",
+      "missed": "You didn't check out on {date}.",
+      "viewDay": "View day",
+      "warning": {
+        "holiday": "Today is a company day off. You can still check in if you're working.",
+        "non-working": "Today isn't a working day. You can still check in if you're working.",
+        "on-leave": "You're on approved leave today. You can still check in if you're working."
+      }
+    },
+    "history": {
+      "title": "History",
+      "loading": "Loading attendance history",
+      "view": "View",
+      "calendar": "Calendar",
+      "list": "List",
+      "previous": "Previous month",
+      "next": "Next month",
+      "thisMonth": "This month",
+      "calendarLabel": "Attendance by day",
+      "listLabel": "Days this month",
+      "summary": {
+        "attended": "Days attended",
+        "late": "Late",
+        "absent": "Absent",
+        "worked": "Time worked"
+      },
+      "empty": {
+        "title": "No attendance yet",
+        "body": "Your days show up here after your first check-in."
+      }
+    },
+    "day": {
+      "sessions": "Sessions",
+      "total": "Total {duration}",
+      "noSessions": {
+        "absent": "No check-in on this working day.",
+        "leave": "On approved leave.",
+        "weekend": "Not a working day.",
+        "holiday": "Company holiday.",
+        "not-yet": "No check-in yet today."
+      },
+      "missingHint": "This day has no check-out. Ask HR to correct it, or request a correction once requests open.",
+      "history": "Change history",
+      "noChanges": "No changes to this day.",
+      "corrected": "Corrected the day",
+      "manual": "Manual",
+      "fromRequest": "Approved request #{id}",
+      "was": "was",
+      "now": "now",
+      "changedTo": "changed to",
+      "showAll": "Show all ({count})",
+      "fields": {
+        "checkIn": "Check-in",
+        "checkOut": "Check-out"
+      }
+    }
   }
 }

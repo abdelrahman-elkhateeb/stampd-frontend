@@ -79,3 +79,29 @@ export function formatNumber(
     new Intl.NumberFormat(getIntlLocale(locale), options).format(value)
   )
 }
+
+/** An instant as 24-hour company time ("08:02"). */
+export function formatTime(iso: string, locale: Locale, timeZone: string) {
+  return clean(
+    new Intl.DateTimeFormat(getIntlLocale(locale), {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).format(new Date(iso))
+  )
+}
+
+/** "7h 45m" / "7س 45د": a zero part is omitted, no seconds. */
+export function formatDuration(totalMinutes: number, locale: Locale) {
+  const minutes = Math.max(0, Math.floor(totalMinutes))
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  const [uh, um] = locale === "ar" ? ["س", "د"] : ["h", "m"]
+  return [
+    h ? formatNumber(h, locale) + uh : "",
+    m || !h ? formatNumber(m, locale) + um : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+}
