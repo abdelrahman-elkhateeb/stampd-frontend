@@ -116,7 +116,10 @@
     "NAME_TAKEN": "Another leave type already has this name",
     "HOLIDAY_EXISTS": "There's already a holiday on this date",
     "DEPARTMENT_TAKEN": "Another department already has this name",
-    "ZERO_ADJUSTMENT": "Enter a change other than 0"
+    "ZERO_ADJUSTMENT": "Enter a change other than 0",
+    "BEFORE_TODAY": "Pick today or a later date",
+    "AFTER_TODAY": "Pick today or an earlier date",
+    "LEAVE_CONFLICT": "You already have approved leave on these dates"
   },
   "status": {
     "present": "Present",
@@ -805,12 +808,12 @@
       "error": "Couldn't reach the server. Nothing was recorded.",
       "offline": "You're offline. Check-in will send when you reconnect.",
       "missed": "You didn't check out on {date}.",
-      "viewDay": "View day",
       "warning": {
         "holiday": "Today is a company day off. You can still check in if you're working.",
         "non-working": "Today isn't a working day. You can still check in if you're working.",
         "on-leave": "You're on approved leave today. You can still check in if you're working."
-      }
+      },
+      "requestCorrection": "Request correction"
     },
     "history": {
       "title": "History",
@@ -844,7 +847,7 @@
         "holiday": "Company holiday.",
         "not-yet": "No check-in yet today."
       },
-      "missingHint": "This day has no check-out. Ask HR to correct it, or request a correction once requests open.",
+      "missingHint": "This day has no check-out. Request a correction so HR can fix it.",
       "history": "Change history",
       "noChanges": "No changes to this day.",
       "corrected": "Corrected the day",
@@ -857,6 +860,100 @@
       "fields": {
         "checkIn": "Check-in",
         "checkOut": "Check-out"
+      },
+      "requestCorrection": "Request correction"
+    }
+  },
+  "requests": {
+    "title": "My requests",
+    "description": "Send WFH, correction and permission requests, and follow their status.",
+    "new": "New request",
+    "loading": "Loading your requests",
+    "filterLabel": "Filter requests",
+    "listLabel": "Your requests",
+    "submittedOn": "Sent {date}",
+    "pickType": "What do you need? Leave opens its own form.",
+    "continue": "Continue",
+    "hr": "HR",
+    "yes": "Yes",
+    "no": "No",
+    "filters": {
+      "type": "Type",
+      "status": "Status",
+      "dates": "Dates"
+    },
+    "empty": {
+      "title": "No requests yet",
+      "body": "Requests you send appear here with their status.",
+      "filteredTitle": "No matches",
+      "filteredBody": "None of your requests match these filters."
+    },
+    "form": {
+      "changeType": "Change type",
+      "pickTypeError": "Choose a request type to continue",
+      "reviewedByHr": "Reviewed by HR",
+      "reviewedByHrNote": "HR reviews this request, not your manager.",
+      "unsupported": "This request type can't be submitted here yet. Contact your admin.",
+      "adminTitle": "Admin options",
+      "onBehalf": "On behalf of",
+      "onBehalfSearch": "Search employees",
+      "onBehalfEmpty": "No one matches",
+      "me": "{name} (you)",
+      "recordApproved": "Record as already approved",
+      "optional": "{label} (optional)",
+      "reasonHint": "Your approver sees this with your request.",
+      "leaveConflict": "You already have approved leave on {day}",
+      "failed": "Couldn't send. Check your connection and try again.",
+      "cancel": "Cancel",
+      "submit": "Submit request",
+      "submitting": "Submitting…",
+      "sent": "Request sent",
+      "recorded": "Request recorded as approved"
+    },
+    "detail": {
+      "title": "Request",
+      "summary": "Details",
+      "employee": "Employee",
+      "approver": "Approver",
+      "none": "Not given",
+      "history": "Request history"
+    },
+    "timeline": {
+      "submitted": "Submitted",
+      "by": "by {name}",
+      "byOnBehalf": "by {name} on behalf of {employee}",
+      "waiting": "Waiting for {approver}",
+      "waitingCancellation": "Waiting for {approver} to decide on the cancellation",
+      "nextStep": "Next step",
+      "showAll": "Show all ({count})"
+    },
+    "actions": {
+      "failed": "That didn't work. Try again.",
+      "withdraw": {
+        "button": "Withdraw",
+        "title": "Withdraw your {type} request?",
+        "description": "{when}. {approver} won't need to decide on it. You can send a new one any time.",
+        "confirm": "Withdraw request",
+        "keep": "Keep pending",
+        "done": "Request withdrawn"
+      },
+      "requestCancellation": {
+        "button": "Request cancellation",
+        "title": "Cancel your approved {type}?",
+        "description": "{when}. {approver} needs to accept the cancellation before it takes effect.",
+        "confirm": "Request cancellation",
+        "keep": "Keep it",
+        "done": "Cancellation requested"
+      },
+      "adminCancel": {
+        "button": "Cancel request",
+        "title": "Cancel {name}'s {type}?",
+        "description": "{when}. {name} is notified with your reason, and their balance and attendance are updated.",
+        "confirm": "Cancel request",
+        "keep": "Keep approved",
+        "reason": "Reason",
+        "reasonRequired": "Add a reason so the employee knows why",
+        "done": "Request cancelled"
       }
     }
   }

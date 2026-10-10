@@ -1,7 +1,6 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronsUpDownIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useId, useState } from "react"
 import { Controller, useForm, type UseFormReturn } from "react-hook-form"
@@ -16,16 +15,7 @@ import {
 import { DateField } from "@/components/pickers"
 import type { Role } from "@/lib/demo-user"
 import { codeErrorMap } from "@/lib/forms"
-import { PersonAvatar } from "@workspace/ui/components/avatar"
 import { Button } from "@workspace/ui/components/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@workspace/ui/components/command"
 import { ConfirmDialog } from "@workspace/ui/components/confirm-dialog"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import {
@@ -34,11 +24,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@workspace/ui/components/field"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@workspace/ui/components/popover"
+import { PersonCombobox } from "@workspace/ui/components/person-combobox"
 import {
   Sheet,
   SheetBody,
@@ -49,7 +35,6 @@ import {
   SheetTitle,
 } from "@workspace/ui/components/sheet"
 import { notify } from "@workspace/ui/components/sonner"
-import { cn } from "@workspace/ui/lib/utils"
 
 import type { Employee } from "./demo-data"
 import { change, updateStore, useEmployeesStore } from "./store"
@@ -314,11 +299,7 @@ export function EmployeeDrawer({
   )
 }
 
-/**
- * The manager combobox (select.md › combobox: people pickers search).
- * ponytail: lives here until a second people picker (FE-11) needs it in packages/ui;
- * the mobile bottom-sheet variant comes with it.
- */
+/** The manager combobox (select.md › combobox: people pickers search). */
 function ManagerField({
   form,
   label,
@@ -331,7 +312,6 @@ function ManagerField({
   const t = useTranslations("employees.form")
   const id = useId()
   const error = useFieldError(form, "managerId", id)
-  const [open, setOpen] = useState(false)
 
   return (
     <Field data-invalid={error ? true : undefined}>
@@ -339,91 +319,26 @@ function ManagerField({
       <Controller
         control={form.control}
         name="managerId"
-        render={({ field }) => {
-          const selected = candidates.find((c) => c.id === field.value)
-          return (
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  id={id}
-                  type="button"
-                  role="combobox"
-                  aria-expanded={open}
-                  aria-invalid={error ? true : undefined}
-                  className={cn(
-                    "flex h-control w-full items-center gap-2 rounded-md border border-input bg-card px-3 text-start text-ui outline-none hover:border-input-hover focus-visible:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid aria-expanded:border-border-strong",
-                    !selected && "text-muted-foreground"
-                  )}
-                >
-                  {selected ? (
-                    <>
-                      <PersonAvatar
-                        name={selected.name}
-                        userId={selected.id}
-                        size={24}
-                      />
-                      <bdi className="truncate">{selected.name}</bdi>
-                    </>
-                  ) : (
-                    t("noManager")
-                  )}
-                  <ChevronsUpDownIcon
-                    aria-hidden
-                    className="ms-auto size-4 shrink-0 text-muted-foreground"
-                  />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="start"
-                className="w-(--radix-popover-trigger-width) min-w-64 gap-0 border border-border p-0 shadow-pop"
-              >
-                <Command>
-                  <CommandInput placeholder={t("managerSearch")} />
-                  <CommandList>
-                    <CommandEmpty>{t("managerEmpty")}</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value={NONE}
-                        keywords={[t("noManager")]}
-                        data-checked={field.value === NONE}
-                        onSelect={() => {
-                          field.onChange(NONE)
-                          setOpen(false)
-                        }}
-                      >
-                        {t("noManager")}
-                      </CommandItem>
-                      {candidates.map((candidate) => (
-                        <CommandItem
-                          key={candidate.id}
-                          value={candidate.id}
-                          keywords={[candidate.name, candidate.jobTitle]}
-                          data-checked={field.value === candidate.id}
-                          onSelect={() => {
-                            field.onChange(candidate.id)
-                            setOpen(false)
-                          }}
-                        >
-                          <PersonAvatar
-                            name={candidate.name}
-                            userId={candidate.id}
-                            size={24}
-                          />
-                          <span className="flex min-w-0 flex-col">
-                            <bdi className="truncate">{candidate.name}</bdi>
-                            <span className="truncate text-caption text-muted-foreground">
-                              <bdi>{candidate.jobTitle}</bdi>
-                            </span>
-                          </span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          )
-        }}
+        render={({ field }) => (
+          <PersonCombobox
+            ref={field.ref}
+            id={id}
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            people={candidates.map((candidate) => ({
+              id: candidate.id,
+              name: candidate.name,
+              detail: candidate.jobTitle,
+            }))}
+            noneValue={NONE}
+            placeholder={t("noManager")}
+            searchPlaceholder={t("managerSearch")}
+            emptyText={t("managerEmpty")}
+            invalid={Boolean(error)}
+            describedBy={error?.id}
+          />
+        )}
       />
       {error ? <FieldError id={error.id}>{error.text}</FieldError> : null}
     </Field>
