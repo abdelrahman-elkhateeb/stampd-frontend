@@ -1176,5 +1176,28 @@
       "usage": "{taken} of {entitled} days",
       "trend": "Attendance, last 30 days"
     }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "description": "Who is off, working from home or travelling. Plans only, never attendance.",
+    "previous": "Previous month",
+    "next": "Next month",
+    "today": "This month",
+    "myTeam": "My team only",
+    "showPending": "Show pending",
+    "view": "View",
+    "month": "Month",
+    "list": "List",
+    "gridLabel": "Company calendar",
+    "summary": "{out} out · {wfh} WFH",
+    "out": "{name} · Out",
+    "wfh": "{name} · WFH",
+    "pendingPrefix": "Pending · {name}",
+    "more": "+{count} more",
+    "close": "Close",
+    "empty": {
+      "title": "Nothing planned this month",
+      "body": "Approved leave, WFH, trips and holidays show up here."
+    }
   }
 }
