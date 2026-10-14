@@ -977,11 +977,43 @@
         "description": "{when}. {name} is notified with your reason, and their balance and attendance are updated.",
         "confirm": "Cancel request",
         "keep": "Keep approved",
-        "reason": "Reason",
-        "reasonRequired": "Add a reason so the employee knows why",
         "done": "Request cancelled"
       },
-      "conflict": "This request changed in the meantime. Here's where it stands now."
+      "conflict": "This request changed in the meantime. Here's where it stands now.",
+      "reason": "Reason",
+      "reasonRequired": "Add a reason so {name} knows why",
+      "approve": {
+        "button": "Approve",
+        "title": "Approve {name}'s {type}?",
+        "description": "{when}.",
+        "confirm": "Approve",
+        "keep": "Not now",
+        "done": "Approved {name}'s request"
+      },
+      "reject": {
+        "button": "Reject",
+        "title": "Reject {name}'s {type}?",
+        "description": "{when}. {name} sees your reason.",
+        "confirm": "Reject request",
+        "keep": "Go back",
+        "done": "Rejected {name}'s request"
+      },
+      "acceptCancellation": {
+        "button": "Accept cancellation",
+        "title": "Cancel {name}'s {type}?",
+        "description": "{when}.",
+        "confirm": "Accept cancellation",
+        "keep": "Go back",
+        "done": "Cancellation accepted"
+      },
+      "declineCancellation": {
+        "button": "Decline cancellation",
+        "title": "Keep {name}'s {type}?",
+        "description": "{when}. The request stays approved, and {name} sees your reason.",
+        "confirm": "Decline cancellation",
+        "keep": "Go back",
+        "done": "Cancellation declined"
+      }
     },
     "theManager": "the manager",
     "yourManager": "Your manager",
@@ -1026,5 +1058,78 @@
       "MORNING": "Morning only",
       "AFTERNOON": "Afternoon only"
     }
+  },
+  "leave": {
+    "title": "My leave",
+    "description": "Your balances for the {year} leave year and every leave request.",
+    "descriptionShort": "Your balances and every leave request.",
+    "request": "Request leave",
+    "balancesTitle": "Balances",
+    "historyTitle": "Leave requests",
+    "empty": {
+      "title": "No leave requests yet",
+      "body": "Requests you send show up here with their status."
+    },
+    "balance": {
+      "of": "days available of {total}",
+      "over": "{count, plural, one {# day over} other {# days over}}",
+      "used": "Used",
+      "upcoming": "Upcoming",
+      "pending": "Pending",
+      "available": "Available",
+      "bar": "{total} days: {used} used, {upcoming} upcoming, {pending} pending, {available} available",
+      "pendingCount": "{count, plural, one {# day pending} other {# days pending}}",
+      "untracked": "Not tracked · {count, plural, one {# day taken this year} other {# days taken this year}}"
+    },
+    "form": {
+      "title": "Request leave",
+      "type": "Leave type",
+      "dates": "Dates",
+      "half": "How much of the day",
+      "halves": {
+        "FULL": "Full day",
+        "MORNING": "Morning",
+        "AFTERNOON": "Afternoon"
+      },
+      "startsAtNoon": "Start at noon on the first day",
+      "endsAtNoon": "End at noon on the last day",
+      "reason": "Reason",
+      "submit": "Send request",
+      "sent": "Leave request sent",
+      "failed": "Couldn't send the request. Try again."
+    },
+    "preview": {
+      "checking": "Checking your dates…",
+      "days": "{count, plural, one {# working day} other {# working days}}",
+      "balance": "{type} balance",
+      "notCounted": "Not counted: {days}",
+      "teamOff": "Also off: {names}"
+    },
+    "problems": {
+      "INSUFFICIENT_BALANCE": "You have {available} days available. This request needs {needed}: shorten the dates or pick another leave type.",
+      "REASON_REQUIRED": "This leave type needs a reason.",
+      "REQUEST_OVERLAP": "You already have a request on these days. Withdraw or cancel it first.",
+      "NO_WORKING_DAYS": "These dates have no working days.",
+      "CROSSES_LEAVE_YEAR": "This runs into the next leave year. Split it at the end of the year.",
+      "HALF_DAY_NOT_ALLOWED": "This leave type doesn't allow half days."
+    }
+  },
+  "approvals": {
+    "title": "Approvals",
+    "description": "Requests from your team waiting for your decision.",
+    "listLabel": "Requests to review",
+    "panelLabel": "Request under review",
+    "tabs": {
+      "pending": "Pending",
+      "decided": "Decided"
+    },
+    "pendingCount": "{count, plural, one {# waiting · oldest first} other {# waiting · oldest first}}",
+    "decidedCount": "{count, plural, one {# decided · newest first} other {# decided · newest first}}",
+    "caughtUp": {
+      "title": "You're all caught up",
+      "body": "New requests from your team show up here."
+    },
+    "noDecided": "Nothing decided yet",
+    "pick": "Pick a request to review it."
   }
 }

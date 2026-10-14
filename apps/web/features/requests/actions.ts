@@ -38,3 +38,23 @@ export async function submitRequest(
   })
   return problem ? { problem } : { id }
 }
+
+/** Approver: one click, optional comment. */
+export async function approveRequest(id: string, comment = "") {
+  return post(`/requests/${id}/approve`, { comment: comment || null })
+}
+
+/** Approver: the reason is required (approve-reject.md). */
+export async function rejectRequest(id: string, reason = "") {
+  return post(`/requests/${id}/reject`, { reason })
+}
+
+export async function acceptCancellation(id: string, comment = "") {
+  return post(`/requests/${id}/cancellation/approve`, {
+    comment: comment || null,
+  })
+}
+
+export async function declineCancellation(id: string, comment = "") {
+  return post(`/requests/${id}/cancellation/decline`, { comment })
+}

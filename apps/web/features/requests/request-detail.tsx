@@ -14,12 +14,21 @@ import { Card } from "@workspace/ui/components/card"
 import { CategoryChip } from "@workspace/ui/components/category-chip"
 import { ConfirmDialog } from "@workspace/ui/components/confirm-dialog"
 import { notify } from "@workspace/ui/components/sonner"
+import { cn } from "@workspace/ui/lib/utils"
 import {
   StatusTimeline,
   type StatusEvent,
 } from "@workspace/ui/components/timeline"
 
-import { cancelRequest, requestCancellation, withdrawRequest } from "./actions"
+import {
+  acceptCancellation,
+  approveRequest,
+  cancelRequest,
+  declineCancellation,
+  rejectRequest,
+  requestCancellation,
+  withdrawRequest,
+} from "./actions"
 import type {
   LeaveTypeName,
   RequestDetail as Detail,
@@ -27,11 +36,15 @@ import type {
 } from "./request-data"
 import { categoryOf, useRequestText } from "./request-text"
 
-/** The actions this page offers; approving and rejecting live on Approvals (FE-10). */
+/** What the API says the viewer may do (`actions`), in button order. */
 const ACTIONS = {
   WITHDRAW: "withdraw",
   REQUEST_CANCELLATION: "requestCancellation",
   CANCEL: "adminCancel",
+  REJECT: "reject",
+  APPROVE: "approve",
+  DECLINE_CANCELLATION: "declineCancellation",
+  APPROVE_CANCELLATION: "acceptCancellation",
 } as const
 type Action = (typeof ACTIONS)[keyof typeof ACTIONS]
 
@@ -39,7 +52,16 @@ const RUN = {
   withdraw: withdrawRequest,
   requestCancellation,
   adminCancel: cancelRequest,
+  reject: rejectRequest,
+  approve: approveRequest,
+  declineCancellation,
+  acceptCancellation,
 }
+
+/** Approving is one click with no confirm (approve-reject.md). */
+const DIRECT: Action[] = ["approve", "acceptCancellation"]
+/** These need a reason. */
+const REASONED: Action[] = ["adminCancel", "reject", "declineCancellation"]
 
 /** Someone acted first, or the request started meanwhile. */
 const STALE = ["REQUEST_STATUS_CONFLICT", "REQUEST_STARTED"]
@@ -49,10 +71,13 @@ export function RequestDetail({
   request,
   types,
   leaveTypes,
+  back = { href: "/requests" },
 }: {
   request: Detail
   types: RequestType[]
   leaveTypes: LeaveTypeName[]
+  /** Approvals shows it beside its list. */
+  back?: { href: string; label?: string }
 }) {
   const t = useTranslations("requests")
   const text = useRequestText({ types, leaveTypes })
@@ -60,9 +85,11 @@ export function RequestDetail({
   const format = useFormat()
   const user = useUser()
   const [confirming, setConfirming] = useState<Action | null>(null)
+  const [running, setRunning] = useState<Action | null>(null)
   const meta = types.find((type) => type.key === request.type)
-  const actions = request.actions.flatMap((action) =>
-    action in ACTIONS ? [ACTIONS[action as keyof typeof ACTIONS]] : []
+  // In ACTIONS order, so Approve ends up at inline-end (approve-reject.md).
+  const actions = Object.entries(ACTIONS).flatMap(([key, action]) =>
+    request.actions.includes(key) ? [action] : []
   )
   const typeName = text.typeLabel(request.type)
   const name = request.requester.name ?? ""
@@ -70,6 +97,18 @@ export function RequestDetail({
   const hr = request.approverPolicy === "ADMIN_ONLY"
   const approver = request.decision?.by.name ?? t(hr ? "hr" : "detail.manager")
   const waitingFor = t(hr ? "hr" : "theManager")
+  async function run(action: Action, reason?: string) {
+    const problem = await RUN[action](request.id, reason)
+    // Someone acted first: the refreshed page shows where it stands.
+    if (problem && STALE.includes(problem.code)) {
+      setConfirming(null)
+      notify.error(t("actions.conflict"))
+      return
+    }
+    if (problem) throw new Error(problem.code)
+    notify.success(t(`actions.${action}.done`, { name }))
+  }
+
   const when = (iso: string) =>
     `${format.day(companyDate(new Date(iso), user.company.timezone))} · ${format.time(iso)}`
 
@@ -128,13 +167,13 @@ export function RequestDetail({
   if (time) rows.splice(3, 0, [text.fieldLabel("time"), time])
 
   return (
-    <div className="flex max-w-240 flex-col gap-6">
+    <div className="@container flex max-w-240 flex-col gap-6">
       <Link
-        href="/requests"
+        href={back.href}
         className="inline-flex w-fit items-center gap-1 text-body-sm font-semibold underline-offset-4 hover:underline"
       >
         <ArrowLeftIcon aria-hidden className="flip-rtl size-4" />
-        {t("title")}
+        {back.label ?? t("title")}
       </Link>
 
       <div className="flex flex-col gap-3">
@@ -154,12 +193,12 @@ export function RequestDetail({
         </p>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+      <div className="grid items-start gap-6 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <Card className="gap-0 py-0">
           <h2 className="border-b px-card py-4 text-body-lg font-bold">
             {t("detail.summary")}
           </h2>
-          <dl className="grid gap-4 p-card sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]">
+          <dl className="grid gap-4 p-card @md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]">
             {rows.map(([label, value]) => (
               <Row key={label} label={label}>
                 {value ? (
@@ -178,8 +217,26 @@ export function RequestDetail({
               {actions.map((action) => (
                 <Button
                   key={action}
-                  variant={action === "adminCancel" ? "destructive" : "outline"}
-                  onClick={() => setConfirming(action)}
+                  variant={
+                    action === "adminCancel"
+                      ? "destructive"
+                      : DIRECT.includes(action)
+                        ? "default"
+                        : "outline"
+                  }
+                  className={cn(
+                    DIRECT.includes(action) && "sm:ms-auto",
+                    (action === "reject" || action === "declineCancellation") &&
+                      "text-destructive"
+                  )}
+                  loading={running === action}
+                  onClick={() => {
+                    if (!DIRECT.includes(action)) return setConfirming(action)
+                    setRunning(action)
+                    run(action)
+                      .catch(() => notify.error(t("actions.failed")))
+                      .finally(() => setRunning(null))
+                  }}
                 >
                   {t(`actions.${action}.button`)}
                 </Button>
@@ -205,42 +262,34 @@ export function RequestDetail({
         </Card>
       </div>
 
-      {actions.map((action) => (
-        <ConfirmDialog
-          key={action}
-          open={confirming === action}
-          onOpenChange={(open) => !open && setConfirming(null)}
-          title={t(`actions.${action}.title`, { type: typeName, name })}
-          description={t(`actions.${action}.description`, {
-            when: text.when(request),
-            // Only on your own requests, at the start of a sentence.
-            approver: t(hr ? "hr" : "yourManager"),
-            name,
-          })}
-          confirmLabel={t(`actions.${action}.confirm`)}
-          cancelLabel={t(`actions.${action}.keep`)}
-          requireInput={
-            action === "adminCancel"
-              ? {
-                  label: t("actions.adminCancel.reason"),
-                  errorMessage: t("actions.adminCancel.reasonRequired"),
-                }
-              : undefined
-          }
-          errorMessage={t("actions.failed")}
-          onConfirm={async (reason) => {
-            const problem = await RUN[action](request.id, reason)
-            // Someone acted first: the refreshed page shows where it stands.
-            if (problem && STALE.includes(problem.code)) {
-              setConfirming(null)
-              notify.error(t("actions.conflict"))
-              return
+      {actions
+        .filter((action) => !DIRECT.includes(action))
+        .map((action) => (
+          <ConfirmDialog
+            key={action}
+            open={confirming === action}
+            onOpenChange={(open) => !open && setConfirming(null)}
+            title={t(`actions.${action}.title`, { type: typeName, name })}
+            description={t(`actions.${action}.description`, {
+              when: text.when(request),
+              // Only on your own requests, at the start of a sentence.
+              approver: t(hr ? "hr" : "yourManager"),
+              name,
+            })}
+            confirmLabel={t(`actions.${action}.confirm`)}
+            cancelLabel={t(`actions.${action}.keep`)}
+            requireInput={
+              REASONED.includes(action)
+                ? {
+                    label: t("actions.reason"),
+                    errorMessage: t("actions.reasonRequired", { name }),
+                  }
+                : undefined
             }
-            if (problem) throw new Error(problem.code)
-            notify.success(t(`actions.${action}.done`))
-          }}
-        />
-      ))}
+            errorMessage={t("actions.failed")}
+            onConfirm={(reason) => run(action, reason)}
+          />
+        ))}
     </div>
   )
 }
@@ -255,7 +304,7 @@ function Row({
   return (
     <>
       <dt className="text-body-sm text-muted-foreground">{label}</dt>
-      <dd className="-mt-3 text-body break-words sm:mt-0">{children}</dd>
+      <dd className="-mt-3 text-body break-words @md:mt-0">{children}</dd>
     </>
   )
 }

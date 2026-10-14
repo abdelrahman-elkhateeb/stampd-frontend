@@ -977,11 +977,43 @@
         "description": "{when}. سيُبلَّغ {name} بالسبب، ويُحدَّث رصيده وحضوره.",
         "confirm": "إلغاء الطلب",
         "keep": "الإبقاء عليه معتمدًا",
-        "reason": "السبب",
-        "reasonRequired": "أضف سببًا ليعرف الموظف دواعي الإلغاء",
         "done": "تم إلغاء الطلب"
       },
-      "conflict": "تغيّر هذا الطلب في الأثناء. هذه حالته الآن."
+      "conflict": "تغيّر هذا الطلب في الأثناء. هذه حالته الآن.",
+      "reason": "السبب",
+      "reasonRequired": "أضف سببًا ليعرف {name} السبب",
+      "approve": {
+        "button": "اعتماد",
+        "title": "اعتماد {type} لـ{name}؟",
+        "description": "{when}.",
+        "confirm": "اعتماد",
+        "keep": "ليس الآن",
+        "done": "اعتُمد طلب {name}"
+      },
+      "reject": {
+        "button": "رفض",
+        "title": "رفض {type} لـ{name}؟",
+        "description": "{when}. سيرى {name} سببك.",
+        "confirm": "رفض الطلب",
+        "keep": "رجوع",
+        "done": "رُفض طلب {name}"
+      },
+      "acceptCancellation": {
+        "button": "قبول الإلغاء",
+        "title": "إلغاء {type} لـ{name}؟",
+        "description": "{when}.",
+        "confirm": "قبول الإلغاء",
+        "keep": "رجوع",
+        "done": "قُبل الإلغاء"
+      },
+      "declineCancellation": {
+        "button": "رفض الإلغاء",
+        "title": "إبقاء {type} لـ{name}؟",
+        "description": "{when}. يبقى الطلب معتمدًا، وسيرى {name} سببك.",
+        "confirm": "رفض الإلغاء",
+        "keep": "رجوع",
+        "done": "رُفض الإلغاء"
+      }
     },
     "theManager": "المدير",
     "yourManager": "مديرك",
@@ -1026,5 +1058,78 @@
       "MORNING": "الصباح فقط",
       "AFTERNOON": "بعد الظهر فقط"
     }
+  },
+  "leave": {
+    "title": "إجازاتي",
+    "description": "أرصدتك لسنة الإجازات {year} وكل طلبات الإجازة.",
+    "descriptionShort": "أرصدتك وكل طلبات الإجازة.",
+    "request": "طلب إجازة",
+    "balancesTitle": "الأرصدة",
+    "historyTitle": "طلبات الإجازة",
+    "empty": {
+      "title": "لا طلبات إجازة بعد",
+      "body": "تظهر هنا الطلبات التي ترسلها مع حالتها."
+    },
+    "balance": {
+      "of": "يوم متاح من {total}",
+      "over": "{count, plural, one {تجاوز بيوم واحد} two {تجاوز بيومين} few {تجاوز بـ# أيام} many {تجاوز بـ# يومًا} other {تجاوز بـ# يوم}}",
+      "used": "مستخدم",
+      "upcoming": "قادم",
+      "pending": "قيد الانتظار",
+      "available": "متاح",
+      "bar": "{total} يوم: {used} مستخدم، {upcoming} قادم، {pending} قيد الانتظار، {available} متاح",
+      "pendingCount": "{count, plural, one {يوم واحد قيد الانتظار} two {يومان قيد الانتظار} few {# أيام قيد الانتظار} many {# يومًا قيد الانتظار} other {# يوم قيد الانتظار}}",
+      "untracked": "غير متتبَّع · {count, plural, one {يوم واحد هذا العام} two {يومان هذا العام} few {# أيام هذا العام} many {# يومًا هذا العام} other {# يوم هذا العام}}"
+    },
+    "form": {
+      "title": "طلب إجازة",
+      "type": "نوع الإجازة",
+      "dates": "التواريخ",
+      "half": "المدة من اليوم",
+      "halves": {
+        "FULL": "يوم كامل",
+        "MORNING": "الصباح",
+        "AFTERNOON": "بعد الظهر"
+      },
+      "startsAtNoon": "البدء ظهرًا في اليوم الأول",
+      "endsAtNoon": "الانتهاء ظهرًا في اليوم الأخير",
+      "reason": "السبب",
+      "submit": "إرسال الطلب",
+      "sent": "أُرسل طلب الإجازة",
+      "failed": "تعذّر إرسال الطلب. حاول مرة أخرى."
+    },
+    "preview": {
+      "checking": "جارٍ التحقق من التواريخ…",
+      "days": "{count, plural, one {يوم عمل واحد} two {يوما عمل} few {# أيام عمل} many {# يوم عمل} other {# يوم عمل}}",
+      "balance": "رصيد {type}",
+      "notCounted": "لا يُحتسب: {days}",
+      "teamOff": "في إجازة أيضًا: {names}"
+    },
+    "problems": {
+      "INSUFFICIENT_BALANCE": "لديك {available} يوم متاح، ويحتاج هذا الطلب {needed}: قصّر المدة أو اختر نوعًا آخر.",
+      "REASON_REQUIRED": "يتطلب نوع الإجازة هذا ذكر السبب.",
+      "REQUEST_OVERLAP": "لديك طلب في هذه الأيام. اسحبه أو ألغِه أولًا.",
+      "NO_WORKING_DAYS": "لا أيام عمل في هذه التواريخ.",
+      "CROSSES_LEAVE_YEAR": "يمتد الطلب إلى سنة الإجازات التالية. قسّمه عند نهاية السنة.",
+      "HALF_DAY_NOT_ALLOWED": "لا يسمح نوع الإجازة هذا بأنصاف الأيام."
+    }
+  },
+  "approvals": {
+    "title": "الاعتمادات",
+    "description": "طلبات فريقك التي تنتظر قرارك.",
+    "listLabel": "طلبات للمراجعة",
+    "panelLabel": "الطلب قيد المراجعة",
+    "tabs": {
+      "pending": "قيد الانتظار",
+      "decided": "تم البت فيها"
+    },
+    "pendingCount": "{count, plural, one {طلب واحد ينتظر · الأقدم أولًا} two {طلبان ينتظران · الأقدم أولًا} few {# طلبات تنتظر · الأقدم أولًا} many {# طلبًا ينتظر · الأقدم أولًا} other {# طلب ينتظر · الأقدم أولًا}}",
+    "decidedCount": "{count, plural, one {طلب واحد · الأحدث أولًا} two {طلبان · الأحدث أولًا} few {# طلبات · الأحدث أولًا} many {# طلبًا · الأحدث أولًا} other {# طلب · الأحدث أولًا}}",
+    "caughtUp": {
+      "title": "لا شيء بانتظارك",
+      "body": "تظهر هنا الطلبات الجديدة من فريقك."
+    },
+    "noDecided": "لم يُبت في شيء بعد",
+    "pick": "اختر طلبًا لمراجعته."
   }
 }

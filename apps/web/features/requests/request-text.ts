@@ -26,7 +26,9 @@ export const categoryOf = (type: string) => CATEGORIES[type] ?? ""
 export function useRequestTypeLabel() {
   const t = useTranslations("requests")
   return (key: string) =>
-    t.has(`types.${key}.label` as never) ? t(`types.${key}.label` as never) : key
+    t.has(`types.${key}.label` as never)
+      ? t(`types.${key}.label` as never)
+      : key
 }
 
 /** Labels and values for requests, translated by key (the API's labels are English only). */

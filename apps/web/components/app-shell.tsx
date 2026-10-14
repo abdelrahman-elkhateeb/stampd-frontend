@@ -1,5 +1,7 @@
 "use client"
 
+import { createContext, use } from "react"
+
 import {
   BellIcon,
   CalendarDaysIcon,
@@ -58,8 +60,8 @@ import { cn } from "@workspace/ui/lib/utils"
 type NavId = Exclude<keyof Messages["nav"], "main" | "withCount" | "section">
 type NavItem = { id: NavId; href: string; icon: LucideIcon; count?: number }
 
-// ponytail: fixed counts until the dashboard summary and bell poll exist (FE-10, FE-15).
-const COUNTS = { approvals: 7, notifications: 3 }
+// ponytail: no notification count until BE-15 (FE-15).
+const NOTIFICATIONS = 0
 
 const ALL_SECTIONS: {
   id: keyof Messages["nav"]["section"]
@@ -82,7 +84,6 @@ const ALL_SECTIONS: {
         id: "approvals",
         href: "/approvals",
         icon: InboxIcon,
-        count: COUNTS.approvals,
       },
       { id: "myTeam", href: "/team", icon: UsersIcon },
     ],
@@ -103,14 +104,18 @@ const ALL_SECTIONS: {
 ]
 
 // lib/access.ts decides what the role sees; sections left empty are hidden.
-const sectionsFor = (role: Role) =>
+const sectionsFor = (role: Role, approvals: number) =>
   ALL_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => canAccess(role, item.href)),
+    items: section.items
+      .filter((item) => canAccess(role, item.href))
+      .map((item) =>
+        item.id === "approvals" ? { ...item, count: approvals } : item
+      ),
   })).filter((section) => section.items.length > 0)
 
 // The rest of the nav lives under "Me" on mobile (MoreNav).
-const bottomItemsFor = (role: Role): NavItem[] => [
+const bottomItemsFor = (role: Role, approvals: number): NavItem[] => [
   { id: "home", href: "/", icon: LayoutDashboardIcon },
   { id: "requests", href: "/requests", icon: FileTextIcon },
   role === "employee"
@@ -119,14 +124,31 @@ const bottomItemsFor = (role: Role): NavItem[] => [
         id: "approvals",
         href: "/approvals",
         icon: InboxIcon,
-        count: COUNTS.approvals,
+        count: approvals,
       },
   { id: "me", href: "/me", icon: CircleUserIcon },
 ]
 
 function useNav() {
   const { role } = useUser()
-  return { sections: sectionsFor(role), bottomItems: bottomItemsFor(role) }
+  const approvals = use(ApprovalsContext)
+  return {
+    sections: sectionsFor(role, approvals),
+    bottomItems: bottomItemsFor(role, approvals),
+  }
+}
+
+const ApprovalsContext = createContext(0)
+
+/** The nav badge: requests waiting for the signed-in approver ((app)/layout.tsx reads it). */
+export function ApprovalsCount({
+  count,
+  children,
+}: {
+  count: number
+  children: React.ReactNode
+}) {
+  return <ApprovalsContext value={count}>{children}</ApprovalsContext>
 }
 
 function useItemLabel() {
@@ -351,7 +373,7 @@ function ThemeToggle() {
 // ponytail: links to /notifications; the popover with items arrives with FE-15.
 function NotificationBell() {
   const t = useTranslations("topBar")
-  const count = COUNTS.notifications
+  const count = NOTIFICATIONS
   return (
     <Button
       variant="ghost"

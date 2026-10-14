@@ -172,3 +172,41 @@ export async function getActiveEmployees(): Promise<EmployeeOption[]> {
   )
   return items.map(({ id, name, jobTitle }) => ({ id, name, jobTitle }))
 }
+
+/** GET /leave/employees/{id}/requests: leave only, newest first. ponytail: first 100. */
+export async function getLeaveRequests(employeeId: string) {
+  const { items } = await api<{ items: ApiRequest[] }>(
+    `/leave/employees/${employeeId}/requests?pageSize=100`
+  )
+  return items.map(fromApi)
+}
+
+const WAITING = ["PENDING", "CANCELLATION_REQUESTED"]
+const DECIDED = ["APPROVED", "REJECTED", "CANCELLED"]
+
+/**
+ * GET /requests/approvals: what the caller decides on (never their own). "pending" is the
+ * inbox, oldest first; "decided" is the latest decisions. ponytail: first 100.
+ */
+export async function getApprovals(tab: "pending" | "decided") {
+  const params = new URLSearchParams({
+    pageSize: "100",
+    sort: tab === "pending" ? "createdAt" : "-createdAt",
+  })
+  for (const status of tab === "pending" ? WAITING : DECIDED)
+    params.append("status", status)
+  const { items } = await api<{ items: ApiRequest[] }>(
+    `/requests/approvals?${params}`
+  )
+  return items.map(fromApi)
+}
+
+/** The nav badge: requests waiting for the caller. */
+export async function countApprovals() {
+  const params = new URLSearchParams({ pageSize: "1" })
+  for (const status of WAITING) params.append("status", status)
+  const { meta } = await api<{ meta: { totalItems: number } }>(
+    `/requests/approvals?${params}`
+  )
+  return meta.totalItems
+}

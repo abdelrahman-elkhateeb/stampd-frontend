@@ -16,7 +16,7 @@ import { RequestForm } from "./request-form"
 import { categoryOf, useRequestText } from "./request-text"
 
 /** Types with their own screen open it instead of the generic form. */
-const FLOWS: Record<string, string> = { LEAVE: "/leave" }
+const FLOWS: Record<string, string> = { LEAVE: "/leave/new" }
 
 /** Only enabled types are offered (FE-08 AC); a disabled or unknown ?type= shows the picker. */
 export function NewRequestPage({
