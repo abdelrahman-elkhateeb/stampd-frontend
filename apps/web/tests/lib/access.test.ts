@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { canAccess } from "./access"
+import { canAccess } from "@/lib/access"
 
 describe("canAccess", () => {
   it("opens the Me section to everyone", () => {

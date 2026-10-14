@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { checkPasswordRules, passwordStrength } from "./password"
+import { checkPasswordRules, passwordStrength } from "@/lib/password"
 
 describe("password rules", () => {
   it("checks length, common words and personal details", () => {

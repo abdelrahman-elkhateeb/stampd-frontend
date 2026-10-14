@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { safeReturnTo } from "./demo-auth"
+import { safeReturnTo } from "@/features/auth/demo-auth"
 
 describe("safeReturnTo", () => {
   it("keeps same-site paths and drops everything else", () => {

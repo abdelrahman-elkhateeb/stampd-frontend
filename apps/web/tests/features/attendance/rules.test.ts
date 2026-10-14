@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { demoHistory, demoRules } from "./demo-data"
+import { demoHistory, demoRules } from "@/features/attendance/demo-data"
 import {
   addMonths,
   checkIn,
@@ -12,7 +12,7 @@ import {
   monthGrid,
   monthSummary,
   workedMinutes,
-} from "./rules"
+} from "@/features/attendance/rules"
 
 // 2026-10-08 is a Thursday; Riyadh is UTC+3 all year.
 const rules = demoRules("2026-10-08")

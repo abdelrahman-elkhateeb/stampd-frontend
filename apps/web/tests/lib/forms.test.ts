@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
 
-import { codeErrorMap } from "./forms"
+import { codeErrorMap } from "@/lib/forms"
 
 const schema = z.object({ email: z.email(), password: z.string().min(8) })
 const codes = (input: object) =>

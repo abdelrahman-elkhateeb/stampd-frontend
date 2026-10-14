@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { DEMO_DEPARTMENTS, DEMO_EMPLOYEES, type LedgerEntry } from "./demo-data"
+import { DEMO_DEPARTMENTS, DEMO_EMPLOYEES, type LedgerEntry } from "@/features/employees/demo-data"
 import {
   directReports,
   ledgerRows,
@@ -8,7 +8,7 @@ import {
   queryEmployees,
   toCsv,
   validateImport,
-} from "./rules"
+} from "@/features/employees/rules"
 
 const QUERY = {
   search: "",

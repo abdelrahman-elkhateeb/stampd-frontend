@@ -16,7 +16,8 @@
         "!.next/dev/**"
       ],
       "env": [
-        "NEXT_PUBLIC_*"
+        "NEXT_PUBLIC_*",
+        "API_BASE_URL"
       ]
     },
     "lint": {

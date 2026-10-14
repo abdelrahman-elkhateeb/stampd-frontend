@@ -119,7 +119,20 @@
     "ZERO_ADJUSTMENT": "Enter a change other than 0",
     "BEFORE_TODAY": "Pick today or a later date",
     "AFTER_TODAY": "Pick today or an earlier date",
-    "LEAVE_CONFLICT": "You already have approved leave on these dates"
+    "LEAVE_CONFLICT": "You already have approved leave on these dates",
+    "OUT_OF_RANGE": "This value is out of range",
+    "ALREADY_EXISTS": "This already exists",
+    "TOO_COMMON": "This password is too common",
+    "CONTAINS_PERSONAL_INFO": "Don't use your name or email in the password",
+    "INCORRECT": "This is incorrect",
+    "FILE_TOO_LARGE": "This file is too large",
+    "UNSUPPORTED_FILE_TYPE": "This file type isn't supported",
+    "UNKNOWN_REFERENCE": "This item no longer exists",
+    "SELF_MANAGER": "Someone can't be their own manager",
+    "NOT_A_MANAGER": "Pick someone with the manager role",
+    "MANAGER_LOOP": "This would make a manager report to their own team",
+    "NO_WORKING_DAYS": "These dates have no working days",
+    "CROSSES_LEAVE_YEAR": "Split this request at the start of the leave year"
   },
   "status": {
     "present": "Present",

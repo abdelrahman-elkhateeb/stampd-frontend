@@ -7,7 +7,7 @@ import {
   formatNumber,
   formatTime,
   isPlainDate,
-} from "./format"
+} from "@/lib/format"
 
 // vitest.config.mts runs the suite with TZ=America/Los_Angeles: if a plain day were
 // formatted in the machine timezone instead of UTC, these assertions would fail.

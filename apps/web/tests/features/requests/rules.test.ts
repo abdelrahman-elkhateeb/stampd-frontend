@@ -6,7 +6,7 @@ import {
   DEMO_REQUEST_TYPES,
   demoRequests,
   type RequestTypeMeta,
-} from "./demo-data"
+} from "@/features/requests/demo-data"
 import {
   allowedActions,
   buildSchema,
@@ -15,7 +15,7 @@ import {
   queryRequests,
   unsupportedFields,
   type RequestFilters,
-} from "./rules"
+} from "@/features/requests/rules"
 
 const TODAY = "2026-10-11"
 const type = (key: string) => DEMO_REQUEST_TYPES.find((t) => t.key === key)!

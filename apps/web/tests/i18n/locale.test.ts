@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import ar from "@/messages/ar.json"
 import en from "@/messages/en.json"
 
-import { getDirection, getIntlLocale } from "./locale"
+import { getDirection, getIntlLocale } from "@/i18n/locale"
 
 const ARABIC_INDIC_DIGITS = /[\u0660-\u0669\u06F0-\u06F9]/
 

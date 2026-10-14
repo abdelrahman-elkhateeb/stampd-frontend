@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest"
 
-import { DEMO_APPROVED_REQUESTS, DEMO_COMPANY } from "./demo-data"
+import { DEMO_APPROVED_REQUESTS, DEMO_COMPANY } from "@/features/settings/demo-data"
 import {
   accentOutline,
   affectedRequests,
   contrast,
   settingsDiff,
   workingDaysSummary,
-} from "./rules"
+} from "@/features/settings/rules"
 
 const NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
