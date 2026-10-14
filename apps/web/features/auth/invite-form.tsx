@@ -7,13 +7,25 @@ import { z } from "zod"
 
 import { PasswordField, TextField } from "@/components/form-fields"
 import { useRouter } from "@/i18n/navigation"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
 import { Button } from "@workspace/ui/components/button"
+import { ErrorState } from "@workspace/ui/components/error-state"
 import { FieldGroup } from "@workspace/ui/components/field"
 
-export function InviteForm({ name, email }: { name: string; email: string }) {
+import { acceptInvite } from "./actions"
+
+export function InviteForm({
+  token,
+  name,
+  email,
+}: {
+  token: string
+  name: string
+  email: string
+}) {
   const t = useTranslations("auth.invite")
+  const tAuth = useTranslations("auth")
   const router = useRouter()
   const form = useForm({
     resolver: zodResolver(
@@ -36,11 +48,20 @@ export function InviteForm({ name, email }: { name: string; email: string }) {
 
   const currentName = useWatch({ control: form.control, name: "name" })
 
-  // Employees land on their dashboard (FE-02 AC).
-  const onSubmit = form.handleSubmit(() => router.push("/"))
+  const onSubmit = form.handleSubmit(async (values) => {
+    const problem = await acceptInvite(token, values)
+    // Employees land on their dashboard (FE-02 AC).
+    if (!problem) router.push("/")
+    // Expired or used meanwhile: the page re-renders with the explanation.
+    else if (problem.code.startsWith("TOKEN_")) router.refresh()
+    else showProblem(form, problem)
+  })
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      {form.formState.errors.root ? (
+        <ErrorState variant="inline" title={tAuth("unavailable")} />
+      ) : null}
       <FieldGroup>
         <div className="flex flex-col gap-1">
           <p className="text-body font-medium">{t("email")}</p>
@@ -63,7 +84,9 @@ export function InviteForm({ name, email }: { name: string; email: string }) {
           personal={[currentName, email]}
         />
       </FieldGroup>
-      <Button type="submit">{t("submit")}</Button>
+      <Button type="submit" loading={form.formState.isSubmitting}>
+        {t("submit")}
+      </Button>
     </form>
   )
 }

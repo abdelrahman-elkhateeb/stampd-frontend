@@ -9,24 +9,32 @@ import { z } from "zod"
 
 import { PasswordField, TextField } from "@/components/form-fields"
 import { Link, useRouter } from "@/i18n/navigation"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
 import { Button } from "@workspace/ui/components/button"
+import { ErrorState } from "@workspace/ui/components/error-state"
 import { FieldGroup } from "@workspace/ui/components/field"
 import { notify } from "@workspace/ui/components/sonner"
+
+import { forgotPassword, resetPassword } from "./actions"
 
 const ForgotBody = z.object({ email: z.email() })
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth.forgot")
+  const tAuth = useTranslations("auth")
   const [sentTo, setSentTo] = useState<string>()
   const form = useForm({
     resolver: zodResolver(ForgotBody, codeErrorMap),
     defaultValues: { email: "" },
   })
 
-  // ponytail: no API yet. The same confirmation shows whether or not the account exists.
-  const onSubmit = form.handleSubmit(({ email }) => setSentTo(email))
+  // The same confirmation shows whether or not the account exists.
+  const onSubmit = form.handleSubmit(async ({ email }) => {
+    const problem = await forgotPassword(email)
+    if (problem) showProblem(form, problem)
+    else setSentTo(email)
+  })
 
   if (sentTo) {
     return (
@@ -50,6 +58,9 @@ export function ForgotPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      {form.formState.errors.root ? (
+        <ErrorState variant="inline" title={tAuth("unavailable")} />
+      ) : null}
       <FieldGroup>
         <TextField
           form={form}
@@ -60,7 +71,9 @@ export function ForgotPasswordForm() {
           inputMode="email"
         />
       </FieldGroup>
-      <Button type="submit">{t("submit")}</Button>
+      <Button type="submit" loading={form.formState.isSubmitting}>
+        {t("submit")}
+      </Button>
       <BackToLogin />
     </form>
   )
@@ -74,21 +87,31 @@ const ResetBody = z
   })
 
 /** Sets the new password; the user is then logged in (FE-02 AC). */
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ token }: { token: string }) {
   const t = useTranslations("auth.reset")
+  const tAuth = useTranslations("auth")
   const router = useRouter()
   const form = useForm({
     resolver: zodResolver(ResetBody, codeErrorMap),
     defaultValues: { password: "" },
   })
 
-  const onSubmit = form.handleSubmit(() => {
-    notify.success(t("done"))
-    router.push("/")
+  const onSubmit = form.handleSubmit(async ({ password }) => {
+    const problem = await resetPassword(token, password)
+    if (!problem) {
+      notify.success(t("done"))
+      router.push("/")
+    }
+    // Expired or used meanwhile: the page re-renders with the explanation.
+    else if (problem.code.startsWith("TOKEN_")) router.refresh()
+    else showProblem(form, problem)
   })
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      {form.formState.errors.root ? (
+        <ErrorState variant="inline" title={tAuth("unavailable")} />
+      ) : null}
       <FieldGroup>
         <PasswordField
           form={form}
@@ -97,7 +120,9 @@ export function ResetPasswordForm() {
           variant="new"
         />
       </FieldGroup>
-      <Button type="submit">{t("submit")}</Button>
+      <Button type="submit" loading={form.formState.isSubmitting}>
+        {t("submit")}
+      </Button>
     </form>
   )
 }

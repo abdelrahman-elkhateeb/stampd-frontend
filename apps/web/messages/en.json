@@ -57,6 +57,7 @@
     },
     "logout": "Log out",
     "backToLogin": "Back to log in",
+    "unavailable": "We couldn’t reach Stampd. Try again in a moment.",
     "signup": {
       "title": "Create your company account",
       "description": "Set up Stampd for your team in a few minutes.",

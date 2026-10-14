@@ -11,7 +11,7 @@ import { z } from "zod"
 import { MoreNav, THEMES } from "@/components/app-shell"
 import { PasswordField, TextField } from "@/components/form-fields"
 import { LocaleSwitcher } from "@/components/locale-switcher"
-import { Link } from "@/i18n/navigation"
+import { logout } from "@/features/auth/actions"
 import { DEMO_USER } from "@/lib/demo-user"
 import { codeErrorMap } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
@@ -59,11 +59,13 @@ export function ProfilePage() {
       <MoreNav />
 
       {/* On desktop, log out is in the account menu. */}
-      <Button variant="outline" className="text-destructive md:hidden" asChild>
-        <Link href="/login">
-          <LogOutIcon aria-hidden className="flip-rtl" />
-          {tAuth("logout")}
-        </Link>
+      <Button
+        variant="outline"
+        className="text-destructive md:hidden"
+        onClick={() => logout()}
+      >
+        <LogOutIcon aria-hidden className="flip-rtl" />
+        {tAuth("logout")}
       </Button>
     </div>
   )

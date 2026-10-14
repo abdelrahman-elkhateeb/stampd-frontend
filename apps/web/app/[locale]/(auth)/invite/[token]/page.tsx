@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 
 import { AuthCard } from "@/features/auth/auth-card"
-import { findInvite } from "@/features/auth/demo-auth"
+import { findInvite } from "@/features/auth/auth-api"
 import { InviteForm } from "@/features/auth/invite-form"
 import type { Locale } from "@/i18n/routing"
 
@@ -17,7 +17,7 @@ export default async function InvitePage({
   const { locale, token } = await params
   setRequestLocale(locale as Locale)
   const t = await getTranslations("auth.invite")
-  const invite = findInvite(token)
+  const invite = await findInvite(token)
 
   // An expired invite shows the explanation only, no form (FE-02 AC).
   if (!invite) {
@@ -26,11 +26,11 @@ export default async function InvitePage({
 
   return (
     <AuthCard
-      company={invite.company}
-      title={t("title", { company: invite.company })}
+      company={invite.companyName}
+      title={t("title", { company: invite.companyName })}
       description={t("description")}
     >
-      <InviteForm name={invite.name} email={invite.email} />
+      <InviteForm token={token} name={invite.name} email={invite.email} />
     </AuthCard>
   )
 }

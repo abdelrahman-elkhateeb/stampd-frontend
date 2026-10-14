@@ -12,14 +12,15 @@ import {
   TextField,
 } from "@/components/form-fields"
 import { Link, useRouter } from "@/i18n/navigation"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
 import { useTimeZones } from "@/lib/time-zones"
 import { Button } from "@workspace/ui/components/button"
+import { ErrorState } from "@workspace/ui/components/error-state"
 import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { inputClassName } from "@workspace/ui/components/input"
 
-import { isRegistered } from "./demo-auth"
+import { signup } from "./actions"
 
 const SignupBody = z
   .object({
@@ -44,6 +45,7 @@ const SERVER_ZONES = [FALLBACK_ZONE]
 
 export function SignupForm() {
   const t = useTranslations("auth.signup")
+  const tAuth = useTranslations("auth")
   const router = useRouter()
   const timezoneId = useId()
   const form = useForm({
@@ -65,13 +67,17 @@ export function SignupForm() {
     if (zones.length > 1) form.setValue("timezone", zones[0]!)
   }, [form, zones])
 
-  const onSubmit = form.handleSubmit(({ email }) => {
-    if (isRegistered(email)) {
-      form.setError("email", { message: "EMAIL_TAKEN" })
-      return
-    }
+  const onSubmit = form.handleSubmit(async (values) => {
+    const problem = await signup(values)
     // The new admin lands on the dashboard, where the setup checklist waits.
-    router.push("/")
+    if (!problem) return router.push("/")
+    // A taken email gets its own message and a "log in instead" link.
+    const fieldErrors = problem.fieldErrors.map((error) =>
+      error.field === "email" && error.code === "ALREADY_EXISTS"
+        ? { ...error, code: "EMAIL_TAKEN" }
+        : error
+    )
+    showProblem(form, { ...problem, fieldErrors }, { acceptTerms: "terms" })
   })
 
   const [name, email] = useWatch({
@@ -81,6 +87,9 @@ export function SignupForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      {form.formState.errors.root ? (
+        <ErrorState variant="inline" title={tAuth("unavailable")} />
+      ) : null}
       <FieldGroup>
         <TextField
           form={form}
@@ -144,7 +153,9 @@ export function SignupForm() {
           })}
         />
       </FieldGroup>
-      <Button type="submit">{t("submit")}</Button>
+      <Button type="submit" loading={form.formState.isSubmitting}>
+        {t("submit")}
+      </Button>
       <p className="text-center text-body text-muted-foreground">
         {t("haveAccount")}{" "}
         <Link

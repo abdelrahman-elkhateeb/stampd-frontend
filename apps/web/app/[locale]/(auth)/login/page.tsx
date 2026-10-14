@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 
 import { AuthCard } from "@/features/auth/auth-card"
-import { safeReturnTo } from "@/features/auth/demo-auth"
+import { safeReturnTo } from "@/features/auth/auth-api"
 import { LoginForm } from "@/features/auth/login-form"
 import type { Locale } from "@/i18n/routing"
 

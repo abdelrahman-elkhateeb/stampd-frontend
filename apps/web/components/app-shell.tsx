@@ -24,6 +24,7 @@ import { useLocale, useTranslations, type Messages } from "next-intl"
 import { useTheme } from "next-themes"
 
 import { LocaleSwitcher } from "@/components/locale-switcher"
+import { logout } from "@/features/auth/actions"
 import { getDirection } from "@/i18n/locale"
 import { Link, usePathname } from "@/i18n/navigation"
 import type { Locale } from "@/i18n/routing"
@@ -392,11 +393,9 @@ function UserMenu() {
         <DropdownMenuSeparator />
         <ThemeMenuGroup />
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" asChild>
-          <Link href="/login">
-            <LogOutIcon aria-hidden className="flip-rtl" />
-            {t("auth.logout")}
-          </Link>
+        <DropdownMenuItem variant="destructive" onSelect={() => logout()}>
+          <LogOutIcon aria-hidden className="flip-rtl" />
+          {t("auth.logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

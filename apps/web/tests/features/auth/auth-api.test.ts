@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
-import { safeReturnTo } from "@/features/auth/demo-auth"
+import { safeReturnTo } from "@/features/auth/auth-api"
+
+// Only the pure helper is tested; lib/api pulls in next-intl navigation.
+vi.mock("@/lib/api", () => ({}))
 
 describe("safeReturnTo", () => {
   it("keeps same-site paths and drops everything else", () => {

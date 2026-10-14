@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 
 import { AuthCard } from "@/features/auth/auth-card"
-import { isResetTokenValid } from "@/features/auth/demo-auth"
+import { isResetTokenValid } from "@/features/auth/auth-api"
 import { ResetPasswordForm } from "@/features/auth/password-forms"
 import { Link } from "@/i18n/navigation"
 import type { Locale } from "@/i18n/routing"
@@ -20,7 +20,7 @@ export default async function ResetPasswordPage({
   setRequestLocale(locale as Locale)
   const t = await getTranslations("auth.reset")
 
-  if (!isResetTokenValid(token)) {
+  if (!(await isResetTokenValid(token))) {
     return (
       <AuthCard title={t("expiredTitle")} description={t("expiredBody")}>
         <Button asChild>
@@ -32,7 +32,7 @@ export default async function ResetPasswordPage({
 
   return (
     <AuthCard title={t("title")} description={t("description")}>
-      <ResetPasswordForm />
+      <ResetPasswordForm token={token} />
     </AuthCard>
   )
 }
