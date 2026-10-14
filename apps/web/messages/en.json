@@ -1242,5 +1242,69 @@
       "failed": "Couldn't save that change. Check the times and try again.",
       "saved": "Day corrected"
     }
+  },
+  "reports": {
+    "title": "Reports",
+    "description": "Attendance, leave and WFH for any range up to 13 months. The CSV has every row.",
+    "views": {
+      "attendanceSummary": "Attendance summary",
+      "attendanceDetail": "Attendance by day",
+      "leaveBalances": "Leave balances",
+      "leaveRegister": "Leave register",
+      "wfhSummary": "WFH summary",
+      "wfhRegister": "WFH and trips"
+    },
+    "year": "Leave year",
+    "range": "Range",
+    "dates": "Dates",
+    "presets": {
+      "THIS_MONTH": "This month",
+      "LAST_MONTH": "Last month",
+      "THIS_LEAVE_YEAR": "This leave year",
+      "CUSTOM": "Custom dates"
+    },
+    "export": "Download CSV",
+    "timezone": "Times in company time ({zone}).",
+    "totals": "Totals",
+    "empty": {
+      "title": "Nothing in this range",
+      "body": "Try another range or report."
+    },
+    "columns": {
+      "employee_name": "Employee",
+      "department_name": "Department",
+      "leaveType_name": "Leave type",
+      "approver_name": "Approver",
+      "workingDays": "Working days",
+      "present": "Present",
+      "late": "Late",
+      "absent": "Absent",
+      "wfh": "WFH",
+      "onLeave": "On leave",
+      "unpaidLeaveDays": "Unpaid leave",
+      "businessTrip": "Trip",
+      "missingCheckouts": "Missing check-outs",
+      "workedHours": "Hours",
+      "corrections": "Corrections",
+      "date": "Date",
+      "status": "Status",
+      "firstCheckInAt": "First in",
+      "lastCheckOutAt": "Last out",
+      "corrected": "Corrected",
+      "entitlement": "Entitlement",
+      "adjustments": "Adjustments",
+      "used": "Used",
+      "upcoming": "Upcoming",
+      "pending": "Pending",
+      "available": "Available",
+      "startDate": "From",
+      "endDate": "To",
+      "days": "Days",
+      "daysInRange": "Days in range",
+      "wfhDays": "WFH days",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "type": "Type"
+    }
   }
 }

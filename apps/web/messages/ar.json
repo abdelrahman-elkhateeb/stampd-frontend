@@ -1242,5 +1242,69 @@
       "failed": "تعذّر حفظ التغيير. تحقق من الأوقات وحاول مرة أخرى.",
       "saved": "صُحّح اليوم"
     }
+  },
+  "reports": {
+    "title": "التقارير",
+    "description": "الحضور والإجازات والعمل من المنزل لأي فترة حتى 13 شهرًا. ملف CSV يحوي كل الصفوف.",
+    "views": {
+      "attendanceSummary": "ملخص الحضور",
+      "attendanceDetail": "الحضور باليوم",
+      "leaveBalances": "أرصدة الإجازات",
+      "leaveRegister": "سجل الإجازات",
+      "wfhSummary": "ملخص العمل من المنزل",
+      "wfhRegister": "العمل من المنزل والرحلات"
+    },
+    "year": "سنة الإجازات",
+    "range": "الفترة",
+    "dates": "التواريخ",
+    "presets": {
+      "THIS_MONTH": "هذا الشهر",
+      "LAST_MONTH": "الشهر الماضي",
+      "THIS_LEAVE_YEAR": "سنة الإجازات الحالية",
+      "CUSTOM": "تواريخ مخصّصة"
+    },
+    "export": "تنزيل CSV",
+    "timezone": "الأوقات بتوقيت الشركة ({zone}).",
+    "totals": "الإجمالي",
+    "empty": {
+      "title": "لا شيء في هذه الفترة",
+      "body": "جرّب فترة أو تقريرًا آخر."
+    },
+    "columns": {
+      "employee_name": "الموظف",
+      "department_name": "القسم",
+      "leaveType_name": "نوع الإجازة",
+      "approver_name": "المعتمِد",
+      "workingDays": "أيام العمل",
+      "present": "حاضر",
+      "late": "متأخر",
+      "absent": "غائب",
+      "wfh": "من المنزل",
+      "onLeave": "في إجازة",
+      "unpaidLeaveDays": "إجازة بلا راتب",
+      "businessTrip": "رحلة",
+      "missingCheckouts": "انصراف غير مسجّل",
+      "workedHours": "الساعات",
+      "corrections": "التصحيحات",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "firstCheckInAt": "أول حضور",
+      "lastCheckOutAt": "آخر انصراف",
+      "corrected": "مصحّح",
+      "entitlement": "الاستحقاق",
+      "adjustments": "التعديلات",
+      "used": "مستخدم",
+      "upcoming": "قادم",
+      "pending": "معلّق",
+      "available": "متاح",
+      "startDate": "من",
+      "endDate": "إلى",
+      "days": "الأيام",
+      "daysInRange": "أيام الفترة",
+      "wfhDays": "أيام من المنزل",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "type": "النوع"
+    }
   }
 }
