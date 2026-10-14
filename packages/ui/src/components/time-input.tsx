@@ -89,15 +89,31 @@ function TimeInput({
     })
   }
 
+  /** Commits once both halves are known; until then the typed half waits in the draft. */
+  function settle(segment: Segment, number: number) {
+    const other = segment === "hours" ? "minutes" : "hours"
+    const otherNumber =
+      parsed[other] ?? (draft[other] === "" ? null : Number(draft[other]))
+    if (otherNumber === null) {
+      setDraft((current) => ({ ...current, [segment]: pad(number) }))
+    } else {
+      setDraft({ hours: "", minutes: "" })
+      commit({
+        hours: null,
+        minutes: null,
+        [segment]: number,
+        [other]: otherNumber,
+      })
+    }
+  }
+
   function onType(segment: Segment, raw: string) {
     const digits = normalizeDigits(raw).replace(/\D/g, "").slice(-2)
     if (digits.length < 2) {
       setDraft((current) => ({ ...current, [segment]: digits }))
       return
     }
-    const number = Math.min(Number(digits), LIMITS[segment])
-    setDraft((current) => ({ ...current, [segment]: "" }))
-    commit({ ...parsed, [segment]: number })
+    settle(segment, Math.min(Number(digits), LIMITS[segment]))
     if (segment === "hours") refs.minutes.current?.focus()
   }
 
@@ -138,13 +154,8 @@ function TimeInput({
 
   function onBlur(segment: Segment) {
     // A single typed digit becomes "0X" when you leave the segment.
-    if (draft[segment] !== "") {
-      commit({
-        ...parsed,
-        [segment]: Math.min(Number(draft[segment]), LIMITS[segment]),
-      })
-      setDraft((current) => ({ ...current, [segment]: "" }))
-    }
+    if (draft[segment] !== "")
+      settle(segment, Math.min(Number(draft[segment]), LIMITS[segment]))
   }
 
   const segment = (name: Segment) => (

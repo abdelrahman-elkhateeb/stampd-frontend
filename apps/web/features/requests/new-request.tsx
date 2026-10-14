@@ -11,16 +11,25 @@ import { CategoryIcon } from "@workspace/ui/components/category-chip"
 import { FieldError } from "@workspace/ui/components/field"
 import { RadioCard, RadioGroup } from "@workspace/ui/components/radio-group"
 
-import { DEMO_REQUEST_TYPES } from "./demo-data"
-import { RequestForm, useDemoText } from "./request-form"
+import type { EmployeeOption, RequestType } from "./request-data"
+import { RequestForm } from "./request-form"
+import { categoryOf, useRequestText } from "./request-text"
+
+/** Types with their own screen open it instead of the generic form. */
+const FLOWS: Record<string, string> = { LEAVE: "/leave" }
 
 /** Only enabled types are offered (FE-08 AC); a disabled or unknown ?type= shows the picker. */
-const ENABLED = DEMO_REQUEST_TYPES.filter((type) => type.enabled)
-
-export function NewRequestPage() {
+export function NewRequestPage({
+  types,
+  employees,
+}: {
+  types: RequestType[]
+  employees?: EmployeeOption[]
+}) {
   const t = useTranslations("requests")
   const [typeKey, setTypeKey] = useQueryState("type", parseAsString)
-  const meta = ENABLED.find((type) => type.key === typeKey && !type.flowHref)
+  const enabled = types.filter((type) => type.enabled)
+  const meta = enabled.find((type) => type.key === typeKey && !FLOWS[type.key])
 
   return (
     <div className="flex max-w-160 flex-col gap-6">
@@ -37,30 +46,37 @@ export function NewRequestPage() {
         {meta ? t("form.changeType") : t("title")}
       </Link>
       {meta ? (
-        <RequestForm key={meta.key} meta={meta} />
+        <RequestForm key={meta.key} type={meta} employees={employees} />
       ) : (
-        <TypePicker onPick={(key) => void setTypeKey(key)} />
+        <TypePicker types={enabled} onPick={(key) => void setTypeKey(key)} />
       )}
     </div>
   )
 }
 
-function TypePicker({ onPick }: { onPick: (key: string) => void }) {
+function TypePicker({
+  types,
+  onPick,
+}: {
+  types: RequestType[]
+  onPick: (key: string) => void
+}) {
   const t = useTranslations("requests")
-  const text = useDemoText()
+  const text = useRequestText({ types, leaveTypes: [] })
   const router = useRouter()
   const [selected, setSelected] = useState<string>("")
   const [missing, setMissing] = useState(false)
 
   function next() {
-    const meta = ENABLED.find((type) => type.key === selected)
+    const meta = types.find((type) => type.key === selected)
     if (!meta) {
       setMissing(true)
       document.querySelector<HTMLElement>("[data-slot=radio-card]")?.focus()
       return
     }
     // Leave has its own flow (FE-07).
-    if (meta.flowHref) router.push(meta.flowHref)
+    const flow = FLOWS[meta.key]
+    if (flow) router.push(flow)
     else onPick(meta.key)
   }
 
@@ -89,17 +105,19 @@ function TypePicker({ onPick }: { onPick: (key: string) => void }) {
           setMissing(false)
         }}
       >
-        {ENABLED.map((type) => (
+        {types.map((type) => (
           <RadioCard key={type.key} value={type.key}>
-            <CategoryIcon category={type.category} />
+            <CategoryIcon category={categoryOf(type.key)} />
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="text-body font-bold">
-                {text.text(type.label)}
+                {text.typeLabel(type.key)}
               </span>
               {/* muted-foreground fails AA on the selected (brand-subtle) card in dark. */}
               <span className="text-body-sm text-muted-foreground in-data-[state=checked]:text-foreground">
-                {text.text(type.description)}
-                {type.approver === "hr" ? ` · ${t("form.reviewedByHr")}` : null}
+                {text.typeDescription(type.key)}
+                {type.approverPolicy === "ADMIN_ONLY"
+                  ? ` · ${t("form.reviewedByHr")}`
+                  : null}
               </span>
             </span>
           </RadioCard>

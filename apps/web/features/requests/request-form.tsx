@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { InfoIcon } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useId, useState } from "react"
 import {
@@ -12,20 +12,12 @@ import {
   type UseFormReturn,
 } from "react-hook-form"
 
-import {
-  CheckboxField,
-  ReasonField,
-  SelectField,
-  StepperField,
-  TextField,
-} from "@/components/form-fields"
+import { ReasonField, SelectField, TextField } from "@/components/form-fields"
 import { DateField, DateRangeField, TimeField } from "@/components/pickers"
-import { useEmployeesStore } from "@/features/employees/store"
+import { useUser } from "@/components/user-provider"
 import { useRouter } from "@/i18n/navigation"
-import { DEMO_USER } from "@/lib/demo-user"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { isPlainDate } from "@/lib/format"
-import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import { CategoryChip } from "@workspace/ui/components/category-chip"
 import { Checkbox } from "@workspace/ui/components/checkbox"
@@ -35,56 +27,58 @@ import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field"
 import { PersonCombobox } from "@workspace/ui/components/person-combobox"
 import { notify } from "@workspace/ui/components/sonner"
 
+import { submitRequest } from "./actions"
+import type { EmployeeOption, RequestType, TypeField } from "./request-data"
+import { categoryOf, useRequestText } from "./request-text"
 import {
-  DEMO_REQUEST_TYPES,
-  type FieldMeta,
-  type FieldValue,
-  type RequestTypeMeta,
-} from "./demo-data"
-import {
-  localize,
   buildSchema,
-  findLeaveConflict,
+  datesField,
+  formFieldNames,
   initialValues,
+  isLongText,
+  toRequestBody,
   unsupportedFields,
   type RequestFormValues,
 } from "./rules"
-import { submitRequest, today, useRequests } from "./store"
 
 type Form = UseFormReturn<RequestFormValues>
 
-// ponytail: demo labels until step 2 moves the form onto GET /requests/types.
-export function useDemoText() {
-  const locale = useLocale()
-  return {
-    text: (value: Parameters<typeof localize>[0]) => localize(value, locale),
-  }
-}
+/** Problems with no field that the form explains itself; anything else is "couldn't send". */
+const FORM_ERRORS = ["REQUEST_TYPE_DISABLED"]
 
 /** patterns/request-form-renderer.md: one form for every request type, from its metadata. */
-export function RequestForm({ meta }: { meta: RequestTypeMeta }) {
+export function RequestForm({
+  type,
+  employees,
+}: {
+  type: RequestType
+  /** Admins only: who they can file for. */
+  employees?: EmployeeOption[]
+}) {
   const t = useTranslations("requests.form")
-  const text = useDemoText()
-  const unsupported = unsupportedFields(meta)
+  const text = useRequestText({ types: [type], leaveTypes: [] })
+  const unsupported = unsupportedFields(type)
 
   useEffect(() => {
-    const fields = unsupportedFields(meta)
-    if (fields.length)
+    if (unsupported.length)
       console.error(
-        `Request type "${meta.key}" has unsupported fields:`,
-        fields.map((field) => `${field.key} (${field.type})`)
+        `Request type "${type.key}" has unsupported fields:`,
+        unsupported.map((field) => `${field.name} (${field.kind})`)
       )
-  }, [meta])
+  }, [type.key, unsupported])
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <CategoryChip category={meta.category} label={text.text(meta.label)} />
-        <h1 className="text-h2 font-bold">{text.text(meta.label)}</h1>
+        <CategoryChip
+          category={categoryOf(type.key)}
+          label={text.typeLabel(type.key)}
+        />
+        <h1 className="text-h2 font-bold">{text.typeLabel(type.key)}</h1>
         <p className="-mt-2 text-muted-foreground">
-          {text.text(meta.description)}
+          {text.typeDescription(type.key)}
         </p>
-        {meta.approver === "hr" ? (
+        {type.approverPolicy === "ADMIN_ONLY" ? (
           <p className="flex w-fit items-center gap-2 rounded-md bg-info-bg px-3 py-2 text-body-sm text-info">
             <InfoIcon aria-hidden className="size-4 shrink-0" />
             {t("reviewedByHrNote")}
@@ -95,97 +89,65 @@ export function RequestForm({ meta }: { meta: RequestTypeMeta }) {
         // Fail closed: no form, no submit.
         <ErrorState variant="inline" title={t("unsupported")} />
       ) : (
-        <FormBody meta={meta} />
+        <FormBody type={type} employees={employees} />
       )}
     </div>
   )
 }
 
-function FormBody({ meta }: { meta: RequestTypeMeta }) {
+function FormBody({
+  type,
+  employees,
+}: {
+  type: RequestType
+  employees?: EmployeeOption[]
+}) {
   const t = useTranslations("requests.form")
   const router = useRouter()
   const searchParams = useSearchParams()
-  const requests = useRequests()
-  const { employees } = useEmployeesStore()
-  const admin = DEMO_USER.role === "admin"
-  const [onBehalf, setOnBehalf] = useState(DEMO_USER.id)
+  const user = useUser()
+  const [onBehalf, setOnBehalf] = useState(user.id)
   const [recordApproved, setRecordApproved] = useState(false)
-  const [conflictDay, setConflictDay] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
+  const forSomeoneElse = onBehalf !== user.id
 
-  // Known keys can be prefilled from the URL, e.g. ?date= from a missed check-out (FE-06).
-  const prefill = Object.fromEntries(
-    meta.fields
-      .filter((field) => field.type === "date")
-      .map((field) => [field.key, searchParams.get(field.key)])
-      .filter((entry): entry is [string, string] =>
-        Boolean(entry[1] && isPlainDate(entry[1]))
-      )
-  )
+  // ?date= prefills the day, e.g. from a missed check-out (FE-06).
+  const date = searchParams.get("date")
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(
-      buildSchema(meta, { today: today(), admin }),
+      buildSchema(type),
       codeErrorMap
     ) as unknown as Resolver<RequestFormValues>,
     mode: "onTouched",
     reValidateMode: "onChange",
-    defaultValues: initialValues(meta, prefill),
+    defaultValues: initialValues(type, date && isPlainDate(date) ? date : null),
   })
+  const rootCode = form.formState.errors.root?.message
+  const label = useLabels()
 
-  const employee =
-    onBehalf === DEMO_USER.id
-      ? { id: DEMO_USER.id, name: DEMO_USER.name }
-      : employees.find((item) => item.id === onBehalf)!
-
-  function approverFor(employeeId: string) {
-    if (meta.approver === "hr") return null
-    if (employeeId === DEMO_USER.id) return DEMO_USER.manager
-    const managerId = employees.find(
-      (item) => item.id === employeeId
-    )?.managerId
-    return employees.find((item) => item.id === managerId)?.name ?? null
-  }
-
-  const onSubmit = form.handleSubmit(async (raw) => {
-    setFailed(false)
-    const values = Object.fromEntries(
-      Object.entries(raw).map(([key, value]) => [
-        key,
-        typeof value === "string" ? value.trim() || null : value,
-      ])
-    ) as Record<string, FieldValue>
-    const conflict = findLeaveConflict(meta, values, {
-      employeeId: employee.id,
-      requests: requests ?? [],
-      types: DEMO_REQUEST_TYPES,
+  const onSubmit = form.handleSubmit(async (values) => {
+    const approved = forSomeoneElse && recordApproved
+    const result = await submitRequest({
+      ...toRequestBody(type, values),
+      ...(forSomeoneElse && { employeeId: onBehalf, approved }),
     })
-    if (conflict) {
-      setConflictDay(conflict.day)
-      form.setError(
-        conflict.field,
-        { message: "LEAVE_CONFLICT" },
-        { shouldFocus: true }
-      )
+    if ("id" in result) {
+      notify.success(t(approved ? "recorded" : "sent"))
+      router.push(`/requests/${result.id}`)
       return
     }
-    try {
-      const id = await submitRequest({
-        type: meta.key,
-        values,
-        employee,
-        approver: approverFor(employee.id),
-        recordApproved: admin && recordApproved,
-      })
-      notify.success(t(recordApproved ? "recorded" : "sent"))
-      router.push(`/requests/${id}`)
-    } catch {
-      setFailed(true)
-    }
+    // Overlaps carry no field: they belong under the dates.
+    if (result.problem.code === "REQUEST_OVERLAP")
+      form.setError(
+        datesField(type),
+        { message: "REQUEST_OVERLAP" },
+        { shouldFocus: true }
+      )
+    else showProblem(form, result.problem, formFieldNames(type))
   })
 
   return (
     <form noValidate onSubmit={onSubmit} className="flex flex-col gap-6">
-      {admin ? (
+      {employees ? (
         <section
           aria-labelledby="on-behalf-title"
           className="flex flex-col gap-4 rounded-lg border bg-card p-4"
@@ -196,43 +158,55 @@ function FormBody({ meta }: { meta: RequestTypeMeta }) {
           <OnBehalfField
             value={onBehalf}
             onChange={setOnBehalf}
-            people={employees
-              .filter((item) => item.status === "active")
-              .map((item) => ({
-                id: item.id,
-                name:
-                  item.id === DEMO_USER.id
-                    ? t("me", { name: item.name })
-                    : item.name,
-                detail: item.jobTitle,
-              }))}
+            people={employees.map((item) => ({
+              id: item.id,
+              name:
+                item.id === user.id ? t("me", { name: item.name }) : item.name,
+              detail: item.jobTitle ?? undefined,
+            }))}
           />
-          <Field orientation="horizontal">
-            <Checkbox
-              id="record-approved"
-              checked={recordApproved}
-              onCheckedChange={(checked) => setRecordApproved(checked === true)}
-            />
-            <FieldLabel htmlFor="record-approved" className="font-normal">
-              {t("recordApproved")}
-            </FieldLabel>
-          </Field>
+          {/* The API records only someone else's request as approved. */}
+          {forSomeoneElse ? (
+            <Field orientation="horizontal">
+              <Checkbox
+                id="record-approved"
+                checked={recordApproved}
+                onCheckedChange={(checked) =>
+                  setRecordApproved(checked === true)
+                }
+              />
+              <FieldLabel htmlFor="record-approved" className="font-normal">
+                {t("recordApproved")}
+              </FieldLabel>
+            </Field>
+          ) : null}
         </section>
       ) : null}
 
       <FieldGroup>
-        {meta.fields.map((field) => (
-          <RequestField
-            key={field.key}
-            form={form}
-            field={field}
-            admin={admin}
-            conflictDay={conflictDay}
-          />
+        <DatesFields form={form} type={type} />
+        {type.fields.map((field) => (
+          <RequestField key={field.name} form={form} field={field} />
         ))}
+        <ReasonField
+          form={form}
+          name="reason"
+          label={label("reason", type.reason === "REQUIRED")}
+          maxLength={1000}
+          description={t("reasonHint")}
+        />
       </FieldGroup>
 
-      {failed ? <ErrorState variant="inline" title={t("failed")} /> : null}
+      {rootCode ? (
+        <ErrorState
+          variant="inline"
+          title={t(
+            FORM_ERRORS.includes(rootCode)
+              ? `errors.${rootCode as "REQUEST_TYPE_DISABLED"}`
+              : "failed"
+          )}
+        />
+      ) : null}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button
@@ -281,69 +255,39 @@ function OnBehalfField({
   )
 }
 
-/** One metadata field → its component (request-form-renderer.md › Field type → component). */
-function RequestField({
-  form,
-  field,
-  admin,
-  conflictDay,
-}: {
-  form: Form
-  field: FieldMeta
-  admin: boolean
-  conflictDay: string | null
-}) {
-  const t = useTranslations()
-  const format = useFormat()
-  const text = useDemoText()
-  const label = field.required
-    ? text.text(field.label)
-    : t("requests.form.optional", { label: text.text(field.label) })
-  const code = form.formState.errors[field.key]?.message
-  const error =
-    typeof code !== "string"
-      ? undefined
-      : code === "LEAVE_CONFLICT" && conflictDay
-        ? t("requests.form.leaveConflict", { day: format.day(conflictDay) })
-        : t.has(`fieldErrors.${code}` as never)
-          ? t(`fieldErrors.${code}` as never)
-          : t("fieldErrors.INVALID_FORMAT")
-  // Admins may file outside the usual dates (BE-10), so the pickers don't block them.
-  const limits = admin
-    ? {}
-    : {
-        min: field.notBefore === "today" ? today() : undefined,
-        max: field.notAfter === "today" ? today() : undefined,
-      }
+/** label("destination", true) → "Destination"; label("reason", false) → "Reason (optional)". */
+function useLabels() {
+  const t = useTranslations("requests.form")
+  const { fieldLabel } = useRequestText({ types: [], leaveTypes: [] })
+  return (name: string, required: boolean) =>
+    required ? fieldLabel(name) : t("optional", { label: fieldLabel(name) })
+}
 
-  switch (field.type) {
-    case "date":
-      return (
+/** error("dates") → the field's error code, translated (messages › fieldErrors). */
+function useErrors(form: Form) {
+  const t = useTranslations("fieldErrors")
+  return (name: string) => {
+    const code = form.formState.errors[name]?.message
+    if (typeof code !== "string") return undefined
+    return t.has(code as never) ? t(code as never) : t("INVALID_FORMAT")
+  }
+}
+
+/** The day or range, then the time window when the type has one. */
+function DatesFields({ form, type }: { form: Form; type: RequestType }) {
+  const timesRequired = type.times === "REQUIRED"
+  const label = useLabels()
+  const error = useErrors(form)
+
+  return (
+    <>
+      {type.dates === "RANGE" ? (
         <Controller
           control={form.control}
-          name={field.key}
-          render={({ field: input }) => (
-            <DateField
-              label={label}
-              value={(input.value as string) || null}
-              onChange={(value) => {
-                input.onChange(value ?? "")
-                input.onBlur()
-              }}
-              error={error}
-              {...limits}
-            />
-          )}
-        />
-      )
-    case "date-range":
-      return (
-        <Controller
-          control={form.control}
-          name={field.key}
+          name="dates"
           render={({ field: input }) => (
             <DateRangeField
-              label={label}
+              label={label("dates", true)}
               value={
                 (input.value as DateRangeValue | null) ?? {
                   from: null,
@@ -354,76 +298,114 @@ function RequestField({
                 input.onChange(value)
                 if (value.to) input.onBlur()
               }}
-              error={error}
+              error={error("dates")}
             />
           )}
         />
-      )
-    case "time":
-      return (
+      ) : (
         <Controller
           control={form.control}
-          name={field.key}
+          name="startDate"
           render={({ field: input }) => (
-            <TimeField
-              label={label}
+            <DateField
+              label={label("day", true)}
               value={(input.value as string) || null}
               onChange={(value) => {
                 input.onChange(value ?? "")
-                if (value) input.onBlur()
+                input.onBlur()
               }}
-              error={error}
+              error={error("startDate")}
             />
           )}
         />
-      )
-    case "text":
-      return (
-        <TextField
-          form={form}
-          name={field.key}
+      )}
+      {type.times !== "NONE" ? (
+        <>
+          {(["startTime", "endTime"] as const).map((name) => (
+            <TimeInput
+              key={name}
+              form={form}
+              name={name}
+              label={label(name, timesRequired)}
+              error={error(name)}
+            />
+          ))}
+        </>
+      ) : null}
+    </>
+  )
+}
+
+function TimeInput({
+  form,
+  name,
+  label,
+  error,
+}: {
+  form: Form
+  name: string
+  label: string
+  error?: string
+}) {
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      render={({ field: input }) => (
+        <TimeField
           label={label}
-          maxLength={field.maxLength}
+          value={(input.value as string) || null}
+          onChange={(value) => {
+            input.onChange(value ?? "")
+            if (value) input.onBlur()
+          }}
+          error={error}
         />
-      )
-    case "textarea":
+      )}
+    />
+  )
+}
+
+/** One type field → its component (request-form-renderer.md › Field type → component). */
+function RequestField({ form, field }: { form: Form; field: TypeField }) {
+  const t = useTranslations()
+  const text = useRequestText({ types: [], leaveTypes: [] })
+  const label = useLabels()(field.name, field.required)
+  const error = useErrors(form)(field.name)
+
+  switch (field.kind) {
+    case "time":
       return (
-        <ReasonField
-          form={form}
-          name={field.key}
-          label={label}
-          maxLength={field.maxLength}
-          description={
-            field.key === "reason" ? t("requests.form.reasonHint") : undefined
-          }
-        />
+        <TimeInput form={form} name={field.name} label={label} error={error} />
       )
-    case "select":
+    case "choice":
       return (
         <SelectField
           form={form}
-          name={field.key}
+          name={field.name}
           label={label}
           placeholder={t("common.choose")}
           options={(field.options ?? []).map((option) => ({
-            value: option.value,
-            label: text.text(option.label),
+            value: option,
+            label: text.value(field, option) ?? option,
           }))}
         />
       )
-    case "number":
-      return (
-        <StepperField
+    default:
+      return isLongText(field) ? (
+        <ReasonField
           form={form}
-          name={field.key}
+          name={field.name}
           label={label}
-          min={field.min}
-          max={field.max}
+          maxLength={field.maxLength}
+        />
+      ) : (
+        <TextField
+          form={form}
+          name={field.name}
+          label={label}
+          maxLength={field.maxLength}
         />
       )
-    case "boolean":
-      return <CheckboxField form={form} name={field.key} label={label} />
-    default:
-      return null
   }
 }

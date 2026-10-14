@@ -158,3 +158,17 @@ export async function getRequest(id: string): Promise<RequestDetail> {
     })),
   }
 }
+
+export type EmployeeOption = {
+  id: string
+  name: string
+  jobTitle: string | null
+}
+
+/** Admin only: who a request can be filed for. ponytail: first 100; search when companies grow. */
+export async function getActiveEmployees(): Promise<EmployeeOption[]> {
+  const { items } = await api<{ items: EmployeeOption[] }>(
+    "/employees?status=ACTIVE&pageSize=100"
+  )
+  return items.map(({ id, name, jobTitle }) => ({ id, name, jobTitle }))
+}

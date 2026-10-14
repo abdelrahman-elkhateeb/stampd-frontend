@@ -467,7 +467,7 @@ function DayDrawer({
                   <div className="flex flex-col items-start gap-2 rounded-md bg-warning-bg px-3 py-2 text-body-sm text-warning">
                     <p>{t("missingHint")}</p>
                     <Link
-                      href={`/requests/new?type=correction&date=${day.day}`}
+                      href={`/requests/new?type=ATTENDANCE_CORRECTION&date=${day.day}`}
                       className="inline-flex items-center gap-1 font-semibold underline underline-offset-4"
                     >
                       {t("requestCorrection")}

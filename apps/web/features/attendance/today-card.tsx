@@ -200,7 +200,7 @@ export function TodayCard() {
             {t("missed", { date: format.day(missed) })}
           </span>
           <Link
-            href={`/requests/new?type=correction&date=${missed}`}
+            href={`/requests/new?type=ATTENDANCE_CORRECTION&date=${missed}`}
             className="inline-flex items-center gap-1 font-semibold underline underline-offset-4"
           >
             {t("requestCorrection")}

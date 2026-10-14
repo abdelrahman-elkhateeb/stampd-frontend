@@ -120,7 +120,6 @@
     "ZERO_ADJUSTMENT": "Enter a change other than 0",
     "BEFORE_TODAY": "Pick today or a later date",
     "AFTER_TODAY": "Pick today or an earlier date",
-    "LEAVE_CONFLICT": "You already have approved leave on these dates",
     "OUT_OF_RANGE": "This value is out of range",
     "ALREADY_EXISTS": "This already exists",
     "TOO_COMMON": "This password is too common",
@@ -133,7 +132,8 @@
     "NOT_A_MANAGER": "Pick someone with the manager role",
     "MANAGER_LOOP": "This would make a manager report to their own team",
     "NO_WORKING_DAYS": "These dates have no working days",
-    "CROSSES_LEAVE_YEAR": "Split this request at the start of the leave year"
+    "CROSSES_LEAVE_YEAR": "Split this request at the start of the leave year",
+    "REQUEST_OVERLAP": "You already have leave or another request on these days. Withdraw or cancel it first."
   },
   "status": {
     "present": "Present",
@@ -919,13 +919,15 @@
       "recordApproved": "Record as already approved",
       "optional": "{label} (optional)",
       "reasonHint": "Your approver sees this with your request.",
-      "leaveConflict": "You already have approved leave on {day}",
       "failed": "Couldn't send. Check your connection and try again.",
       "cancel": "Cancel",
       "submit": "Submit request",
       "submitting": "Submitting…",
       "sent": "Request sent",
-      "recorded": "Request recorded as approved"
+      "recorded": "Request recorded as approved",
+      "errors": {
+        "REQUEST_TYPE_DISABLED": "This request type was just turned off. Choose another type."
+      }
     },
     "detail": {
       "title": "Request",
@@ -1011,7 +1013,9 @@
       "checkOutTime": "Check-out",
       "leaveTypeId": "Leave type",
       "firstDayHalf": "First day",
-      "lastDayHalf": "Last day"
+      "lastDayHalf": "Last day",
+      "startTime": "From",
+      "endTime": "To"
     },
     "options": {
       "MORNING": "Morning only",
