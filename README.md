@@ -2,7 +2,7 @@
 
 Web frontend for **Stampd**, the Employee Ops Platform: attendance, leave, requests and approvals for GCC teams, in English and Arabic (full RTL).
 
-**Status:** UI only. Platform and shared components (FE-01a, FE-01c) are in; the data layer (FE-01b: auth, API client, mock API, Sentry) was removed until the backend (BE-*) exists. Screens use static data from `apps/web/lib/demo-user.ts`. Work is tracked on the Trello board "Employee Ops Platform" (FE-01 … FE-15).
+**Status:** Platform, shared components and the data layer (FE-01a, FE-01c, FE-01b) are in: login and sessions run against [stampd-backend](../stampd-backend), and the shell shows the signed-in user. Most screens still run on demo data (`features/<area>/demo-data.ts`) until they are wired to the API; `docs/backend-integration.md` lists what each one calls. Work is tracked on the Trello board "Employee Ops Platform" (FE-01 … FE-15).
 
 ## Layout
 
@@ -13,7 +13,7 @@ Web frontend for **Stampd**, the Employee Ops Platform: attendance, leave, reque
 | `apps/web/app/[locale]` | Every route lives under `/en` or `/ar` |
 | `apps/web/i18n`, `apps/web/messages` | Locale routing (next-intl) and the English/Arabic message catalogs |
 | `apps/web/features/<feature>` | Feature code (auth, attendance, leave, …). Route files in `app/` stay thin |
-| `apps/web/lib` | App plumbing: formatting, forms, table URL state, demo data |
+| `apps/web/lib` | App plumbing: API client and session, formatting, forms, table URL state, demo data |
 | `packages/ui` | Shared UI: shadcn/ui (Radix), `src/styles/tokens.css` (source of truth for tokens) and `src/styles/globals.css` (Tailwind v4 entry) |
 | `packages/eslint-config`, `packages/typescript-config` | Shared lint and TS settings |
 
@@ -41,7 +41,7 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm dev
 ```
 
-Open <http://localhost:3000>: you're sent to `/en` or `/ar` based on your browser language. There is no backend yet, so nothing is protected; the login page only validates the form and then opens the app.
+The app needs stampd-backend running on `API_BASE_URL` (see its README: `pnpm db:setup && pnpm dev`). Open <http://localhost:3000>: you're sent to `/en` or `/ar` based on your browser language, then to login. Seeded accounts: `admin@`, `manager@`, `employee@demo.stampd.app`, password `demo-password`.
 
 Dev-only pages (on locally and on previews, 404 in production):
 - `/en/dev/gallery`: every shared component in its states, with theme, density and language switches. No login needed.
@@ -55,13 +55,13 @@ Dev-only pages (on locally and on previews, 404 in production):
 | `pnpm lint` | ESLint; fails on any warning |
 | `pnpm typecheck` | Generates route types, then `tsc` |
 | `pnpm test` | Unit and component tests (Vitest) |
-| `pnpm test:e2e` | Builds, then runs Playwright against `next start` (locale routing, login form, RTL, 360px, axe WCAG AA in both themes) |
+| `pnpm test:e2e` | Builds, then runs Playwright against `next start` (locale routing, sign-in redirect and login form, RTL, 360px, axe WCAG AA in both themes). No backend needed, so it doesn't log in |
 
 Before the first `test:e2e`, install the browser once: `pnpm --filter web exec playwright install chromium`.
 
 ### Environment variables
 
-Only `NEXT_PUBLIC_APP_ENV` (see `apps/web/.env.example`); `production` hides `/dev/*`. `NEXT_PUBLIC_*` variables are inlined into the browser bundle, so never put secrets there.
+See `apps/web/.env.example`. `NEXT_PUBLIC_APP_ENV`: `production` hides `/dev/*`. `API_BASE_URL`: stampd-backend, called only from the Next server. `NEXT_PUBLIC_*` variables are inlined into the browser bundle, so never put secrets there.
 
 ## Languages and RTL
 
@@ -79,6 +79,13 @@ Only `NEXT_PUBLIC_APP_ENV` (see `apps/web/.env.example`); `production` hides `/d
 ## Components (FE-01c)
 
 Shared components live in `packages/ui/src/components`, styled to `docs/design-system/components/*.md`. Always import `cn` from `@workspace/ui/lib/utils`: it knows the Stampd theme, so classes like `text-ui` don't silently drop text colours. The app adds translations on top: `components/status.tsx` (status chips), `components/pickers.tsx` (date, range and time fields using the company calendar), `lib/use-table-url-state.ts` (table state in the URL) and `lib/use-table-labels.ts`.
+
+## Sessions and API calls (FE-01b)
+
+- **Next.js is the BFF.** The browser never talks to the API. Auth server actions (`features/auth/actions.ts`) keep the tokens in httpOnly cookies (`lib/session.ts`); server code calls the API with `api()` (`lib/api.ts`), which adds the Bearer token.
+- **`proxy.ts`** refreshes an access token with under 60 s left (new cookies apply to the same render), sends signed-out visitors to `/login?returnTo=…`, sends signed-in users away from login/signup, and shows the no-access page for routes the role can't open (`lib/access.ts`; it asks `GET /me` only on those routes, since the token carries no role).
+- **The user.** `getMe()` (server, once per request) and `useUser()` (client, from `(app)/layout.tsx`). API shapes are mapped in `lib/user.ts` (`ADMIN` → `admin`, `"SUN"` → `0`).
+- **Errors.** In `api()`, a 401 goes to login. On GETs, a 404 shows the not-found page and a 403 the no-access page. Anything else throws `ApiError` (`code`, `fieldErrors`, and the request id as the support code).
 
 ## Error pages
 

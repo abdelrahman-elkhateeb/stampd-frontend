@@ -4,9 +4,9 @@ Read 2026-10-10 from `D:\github projects\stampd-backend` (`main`, commit `6d7f60
 
 ## What the backend has
 
-**Done (BE-01 … BE-11):** auth and sessions, roles and scopes, change history, company settings / holidays / calendar / uploads, departments and employees (with CSV import and offboarding), attendance (check-in/out, daily status, end-of-day close, corrections), leave types and balance ledger, the request & approval engine, leave requests, and WFH / correction / permission / business trip requests.
+**Done (BE-01 … BE-14, checked 2026-10-14):** auth and sessions, roles and scopes, change history, company settings / holidays / calendar / uploads, departments and employees (with CSV import and offboarding), attendance (check-in/out, daily status, end-of-day close, corrections), leave types and balance ledger, the request & approval engine, leave requests, WFH / correction / permission / business trip requests, the company calendar and availability (BE-12), dashboard summaries (BE-13), and reports with CSV export (BE-14). Their endpoints are in the backend README.
 
-**Not yet (BE-12 … BE-15):** company calendar feed, dashboard and report summaries, CSV exports, notifications and emails. FE-09's summary, FE-12, FE-13, FE-14 and FE-15 stay on demo data until those land.
+**Not yet (BE-15):** notifications and emails. FE-15 and the shell's bell count stay on demo data until it lands; invite and reset links are logged by the backend meanwhile.
 
 **Run it:**
 
@@ -21,16 +21,11 @@ pnpm dev                 # http://localhost:4000
 
 Demo accounts: `admin@`, `manager@`, `employee@demo.stampd.app` (and `deactivated@`, `invited@`), password `demo-password`. The manager manages the employee; both are in Operations.
 
-## Step 1: the data layer (FE-01b), before any screen
+## Step 1: the data layer (FE-01b) — done
 
-The frontend's data layer was removed (README › Status), so nothing calls an API today. The backend README's "set `API_BASE_URL` and `API_MOCKING=false`, run `dev:next`" is out of date: none of that exists in this repo now. Rebuild it as FE-01 decided:
+Built 2026-10-14; README › Sessions and API calls describes it. In short: Next.js is the BFF (tokens in httpOnly cookies, `api()` adds the Bearer token, `X-Request-Id` passed through as the support code), `proxy.ts` refreshes tokens and guards routes, `getMe()` / `useUser()` replace `DEMO_USER` in the shell, formatters, pickers and profile, and the FE-02 auth forms call the real endpoints. Error field codes are in `messages › fieldErrors`.
 
-- **Next.js as BFF.** The backend returns `{ accessToken, refreshToken, expiresIn: 900 }` as JSON (Bearer tokens). Keep both in httpOnly cookies set by the Next server; the browser never sees them. Server code calls the API with `Authorization: Bearer …`. No CORS needed, since the browser never calls :4000.
-- **Refresh.** Access tokens live 15 min; refresh tokens 30 days and rotate on every `POST /auth/refresh`. The backend allows a 20 s grace window, so parallel refreshes from several server renders are safe. Reuse after that revokes the session → send the user to login with `returnTo`.
-- **Errors.** Every error is `{ code, message, fieldErrors? }`. Field codes: `REQUIRED`, `TOO_SHORT`, `TOO_LONG`, `OUT_OF_RANGE`, `INVALID_FORMAT`, plus named ones (e.g. `ALREADY_EXISTS`). Add `OUT_OF_RANGE` and the named codes to `messages › fieldErrors`. 401 → login, 403 → no-access, 404 → not found (the backend answers 404, not 403, for records outside your scope).
-- **Pass `X-Request-Id`** through and show it as the support code on error pages.
-- **Env:** add the API base URL (server-only, not `NEXT_PUBLIC_`) to `.env.example`.
-- **Replace the demo user.** `GET /me` → `{ id, name, email, role, status, locale, employee, company: { id, name, timezone, weekStart, workingDays } }`. Then `proxy.ts` and `canAccess` read the role from the session instead of `DEMO_USER`.
+Still on `DEMO_USER`: feature demo data and the screens built on it (each moves when its ticket is wired), profile job details (not in `/me`; read `GET /employees/{id}`), and the shell's approval and notification counts.
 
 ## Shape differences to map
 
@@ -51,8 +46,8 @@ Map these once in the API layer so the components keep their current types.
 
 | FE | Endpoints | Notes |
 |---|---|---|
-| FE-02 auth | `POST /auth/signup`, `/login`, `/refresh`, `/logout`, `/invitations/verify`, `/invitations/accept`, `/password/forgot`, `/password/reset/verify`, `/password/reset` | Replaces `features/auth/demo-auth.ts`. 429 `TOO_MANY_ATTEMPTS` has `Retry-After`; `403 ACCOUNT_DEACTIVATED`. Invite links are `{WEB_APP_URL}/{locale}/invite/{token}` and are logged by the backend until BE-15 sends email |
-| FE-03 shell & guards | `GET /me`, `POST /me/password` | Role and company from `/me` |
+| FE-02 auth | `POST /auth/signup`, `/login`, `/refresh`, `/logout`, `/invitations/verify`, `/invitations/accept`, `/password/forgot`, `/password/reset/verify`, `/password/reset` | Done in FE-01b (`features/auth/actions.ts`). 429 `TOO_MANY_ATTEMPTS` has `Retry-After`; `403 ACCOUNT_DEACTIVATED`. Invite links are `{WEB_APP_URL}/{locale}/invite/{token}` and are logged by the backend until BE-15 sends email |
+| FE-03 shell & guards | `GET /me`, `POST /me/password` | `/me` done in FE-01b; the profile's change-password form still needs `POST /me/password` |
 | FE-04 settings | `GET/PATCH /company/settings` (incl. `disabledRequestTypes`), `PUT/DELETE /company/logo` (raw image body, not multipart), `/company/holidays`, `/leave/types`, `GET /history/company-settings/{companyId}` | Adding a holiday returns `affectedRequests`. Leave type in use → `409 LEAVE_TYPE_IN_USE` |
 | FE-05 employees | `/departments`, `/employees` (search, filters, pages), `POST /employees/import` (CSV body), `…/invitation`, `…/deactivation/preview`, `…/deactivation`, `…/reactivation`, `/leave/employees/{id}/balances[/…/entries, /adjustments, /entitlement]`, `GET /history/employees/{id}` | Manager errors are `422` on `managerId` (`MANAGER_LOOP`, …); `409 HAS_DIRECT_REPORTS`, `LAST_ADMIN`, `DEPARTMENT_NOT_EMPTY` |
 | FE-06 attendance | `POST /attendance/check-in`, `/check-out`, `GET /attendance/today`, `/attendance/month?month=`, `/attendance/employees/{id}/days/{date}` | Check whether `/today` gives a server time for the live counter (the demo has `SERVER_TIME_OFFSET_MS`) |
@@ -71,7 +66,7 @@ Map these once in the API layer so the components keep their current types.
 
 ## Suggested order
 
-1. FE-01b data layer + FE-02 auth + FE-03 `/me` (everything else needs a session).
+1. ~~FE-01b data layer + FE-02 auth + FE-03 `/me`~~ (done).
 2. FE-08 (freshest code, the request engine is complete) and FE-06 attendance.
 3. FE-04 settings and FE-05 employees.
 4. FE-07 leave and FE-10 approvals, built straight against the API.

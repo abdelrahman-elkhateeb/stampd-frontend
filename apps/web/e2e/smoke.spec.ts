@@ -4,8 +4,9 @@ test.describe("locale routing", () => {
   test.use({ locale: "ar-SA" })
 
   test("an Arabic browser lands on /ar in RTL", async ({ page }) => {
+    // Signed out, so "/" ends on the login page.
     await page.goto("/")
-    await expect(page).toHaveURL(/\/ar$/)
+    await expect(page).toHaveURL(/\/ar\/login/)
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
     await expect(page.locator("html")).toHaveAttribute("lang", "ar")
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
@@ -17,7 +18,7 @@ test.describe("default locale", () => {
 
   test("any other language falls back to English", async ({ page }) => {
     await page.goto("/")
-    await expect(page).toHaveURL(/\/en$/)
+    await expect(page).toHaveURL(/\/en\/login/)
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr")
   })
 })
@@ -30,11 +31,12 @@ test("switching language keeps the page and remembers the choice", async ({
   await expect(page).toHaveURL(/\/ar\/login/)
 
   await page.goto("/")
-  await expect(page).toHaveURL(/\/ar$/)
+  await expect(page).toHaveURL(/\/ar\/login/)
 })
 
 test("an unknown URL shows the localised 404 page", async ({ page }) => {
-  const response = await page.goto("/ar/does-not-exist")
+  // Under /dev, which is open without a session; elsewhere signed-out visitors go to login.
+  const response = await page.goto("/ar/dev/does-not-exist")
   expect(response?.status()).toBe(404)
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
   await expect(
@@ -47,7 +49,7 @@ test("nothing scrolls sideways at 360px", async ({ page }) => {
   for (const path of [
     "/en",
     "/ar",
-    "/ar/does-not-exist",
+    "/ar/dev/does-not-exist",
     "/en/login",
     "/ar/login",
     "/ar/signup",
@@ -65,13 +67,12 @@ test("nothing scrolls sideways at 360px", async ({ page }) => {
   }
 })
 
-test("a valid login form opens the app", async ({ page }) => {
-  await page.goto("/en/login")
+// Logging in needs stampd-backend, which CI doesn't run; this covers the guard and the form.
+test("a signed-out visitor goes to login and the form validates", async ({
+  page,
+}) => {
+  await page.goto("/en/attendance")
+  await expect(page).toHaveURL(/\/en\/login\?returnTo=%2Fattendance$/)
   await page.getByRole("button", { name: "Log in" }).click()
   await expect(page.getByText("Fill in this field")).toHaveCount(2)
-
-  await page.getByLabel("Work email").fill("sara@demo.stampd.app")
-  await page.getByLabel("Password").fill("anything")
-  await page.getByRole("button", { name: "Log in" }).click()
-  await expect(page).toHaveURL(/\/en$/)
 })
