@@ -830,7 +830,9 @@
         "non-working": "اليوم ليس يوم عمل. يمكنك تسجيل الحضور إن كنت تعمل.",
         "on-leave": "أنت في إجازة معتمدة اليوم. يمكنك تسجيل الحضور إن كنت تعمل."
       },
-      "requestCorrection": "طلب تصحيح"
+      "requestCorrection": "طلب تصحيح",
+      "noOpenSession": "لقد سجّلت الانصراف بالفعل.",
+      "notTracked": "الحضور غير مُتتبَّع لك، فلا حاجة لتسجيل الحضور."
     },
     "history": {
       "title": "السجل",
@@ -867,18 +869,28 @@
       "missingHint": "لا يوجد تسجيل انصراف لهذا اليوم. قدّم طلب تصحيح لتعالجه الموارد البشرية.",
       "history": "سجل التغييرات",
       "noChanges": "لا توجد تغييرات على هذا اليوم.",
-      "corrected": "صحّح اليوم",
-      "manual": "يدوي",
-      "fromRequest": "طلب معتمد رقم {id}",
       "was": "كان",
       "now": "أصبح",
       "changedTo": "تغيّر إلى",
       "showAll": "عرض الكل ({count})",
+      "requestCorrection": "طلب تصحيح",
       "fields": {
-        "checkIn": "الحضور",
-        "checkOut": "الانصراف"
+        "sessions": "الجلسات",
+        "status": "الحالة"
       },
-      "requestCorrection": "طلب تصحيح"
+      "actions": {
+        "attendance": {
+          "recorded": "سُجّل اليوم",
+          "corrected": "صُحّح اليوم",
+          "closed": "أُغلق اليوم"
+        }
+      },
+      "system": "النظام",
+      "source": {
+        "USER": "يدوي",
+        "APPROVAL": "طلب معتمد",
+        "SYSTEM_JOB": "تلقائي"
+      }
     }
   },
   "requests": {

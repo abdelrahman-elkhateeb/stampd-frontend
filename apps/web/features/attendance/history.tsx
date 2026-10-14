@@ -12,12 +12,11 @@ import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs"
 import { useRef, useState } from "react"
 
 import { Status, StatusFlag, useStatusLabel } from "@/components/status"
+import { useUser } from "@/components/user-provider"
 import { useCalendarNames } from "@/features/settings/company-settings"
 import { getDirection } from "@/i18n/locale"
-import type { Locale } from "@/i18n/routing"
-import { DEMO_USER } from "@/lib/demo-user"
-import { isPlainDate } from "@/lib/format"
 import { Link } from "@/i18n/navigation"
+import type { Locale } from "@/i18n/routing"
 import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
@@ -31,101 +30,60 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet"
-import { Skeleton, SkeletonGroup } from "@workspace/ui/components/skeleton"
 import { StatTile } from "@workspace/ui/components/stat-tile"
-import {
-  StatusBar,
-  type AttendanceStatus,
-} from "@workspace/ui/components/status-chip"
+import { StatusBar } from "@workspace/ui/components/status-chip"
 import { ChangesTimeline } from "@workspace/ui/components/timeline"
 import { cn } from "@workspace/ui/lib/utils"
 
-import { companyToday, demoRules, type DayRecord } from "./demo-data"
-import {
-  addDays,
-  addMonths,
-  dayStatus,
-  monthGrid,
-  monthSummary,
-  workedMinutes,
-  type AttendanceRules,
-} from "./rules"
-import { useAttendanceRecords, useNow } from "./store"
+import type { Day, DayChange, DayDetail } from "./attendance-data"
+import { useNow } from "./clock"
+import { addDays, addMonths, monthGrid, monthSummary } from "./rules"
 import { SessionList } from "./today-card"
 
-type Day = {
-  day: PlainDate
-  record?: DayRecord
-  status: AttendanceStatus | null
-  worked: number
-}
-
 const VIEWS = ["calendar", "list"] as const
-const MONTH = /^\d{4}-\d{2}$/
 const NO_SESSION_REASONS = ["leave", "weekend", "holiday", "not-yet"] as const
 
 /** My attendance by month: summary strip, calendar or list, and the day drawer. */
-export function AttendanceHistory() {
+export function AttendanceHistory({
+  month,
+  thisMonth,
+  firstMonth,
+  today,
+  days,
+  detail,
+  serverNow,
+}: {
+  /** "YYYY-MM", already checked against the bounds. */
+  month: string
+  thisMonth: string
+  firstMonth: string
+  today: PlainDate
+  days: Day[]
+  /** The open day (?day=), read on the server. */
+  detail: DayDetail | null
+  serverNow: number
+}) {
   const t = useTranslations("attendance.history")
   const format = useFormat()
-  const records = useAttendanceRecords()
-  const now = useNow()
+  const { weekStart } = useUser().company
+  // The server reads the month and the open day, so URL changes re-render it.
   const [query, setQuery] = useQueryStates(
     {
       month: parseAsString,
       view: parseAsStringLiteral(VIEWS).withDefault("calendar"),
       day: parseAsString,
     },
-    { history: "replace", clearOnDefault: true }
+    { history: "replace", clearOnDefault: true, shallow: false }
   )
 
-  if (!records || now === null) {
-    return (
-      <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-24 rounded-lg" />
-          ))}
-        </div>
-        <Skeleton className="h-96 rounded-lg" />
-      </SkeletonGroup>
-    )
-  }
-
-  const rules = demoRules(companyToday(now))
-  const thisMonth = rules.today.slice(0, 7)
-  const firstMonth = rules.since.slice(0, 7)
-  const month =
-    query.month &&
-    MONTH.test(query.month) &&
-    query.month >= firstMonth &&
-    query.month <= thisMonth
-      ? query.month
-      : thisMonth
-  const byDate = new Map(records.map((record) => [record.date, record]))
-  const describe = (day: PlainDate): Day => {
-    const record = byDate.get(day)
-    return {
-      day,
-      record,
-      status: dayStatus(day, record, rules),
-      worked: workedMinutes(
-        record?.sessions ?? [],
-        day === rules.today ? now : null
-      ),
-    }
-  }
-  const grid = monthGrid(month, DEMO_USER.company.weekStart).map((day) =>
-    day ? describe(day) : null
+  const byDate = new Map(days.map((day) => [day.date, day]))
+  const grid = monthGrid(month, weekStart).map((date) =>
+    date ? (byDate.get(date) ?? null) : null
   )
-  const days = grid.filter((day) => day !== null)
   const summary = monthSummary(days)
-  const hasData = days.some((day) => day.status && day.day < rules.today)
-  const openDay =
-    query.day && isPlainDate(query.day) ? describe(query.day) : null
+  const hasData = days.some((day) => day.status && day.date <= today)
   const goTo = (next: string) =>
-    setQuery({ month: next === thisMonth ? null : next })
+    setQuery({ month: next === thisMonth ? null : next, day: null })
 
   return (
     <section aria-labelledby="history-title" className="flex flex-col gap-4">
@@ -205,13 +163,14 @@ export function AttendanceHistory() {
           {query.view === "calendar" ? (
             <MonthGrid
               grid={grid}
-              rules={rules}
+              today={today}
               onOpen={(day) => setQuery({ day })}
             />
           ) : (
             <DayList
               days={days.filter(
-                (day) => day.status && day.status !== "weekend"
+                (day) =>
+                  day.status && day.status !== "weekend" && day.date <= today
               )}
               onOpen={(day) => setQuery({ day })}
             />
@@ -226,9 +185,9 @@ export function AttendanceHistory() {
       )}
 
       <DayDrawer
-        day={openDay?.status ? openDay : null}
-        rules={rules}
-        now={now}
+        detail={detail}
+        today={today}
+        serverNow={serverNow}
         onClose={() => setQuery({ day: null })}
       />
     </section>
@@ -238,11 +197,11 @@ export function AttendanceHistory() {
 /** docs/design-system/components/calendar.md › attendance-month. */
 function MonthGrid({
   grid,
-  rules,
+  today,
   onOpen,
 }: {
   grid: (Day | null)[]
-  rules: AttendanceRules
+  today: PlainDate
   onOpen: (day: PlainDate) => void
 }) {
   const t = useTranslations("attendance.history")
@@ -250,16 +209,18 @@ function MonthGrid({
   const names = useCalendarNames()
   const statusLabel = useStatusLabel()
   const rtl = getDirection(useLocale() as Locale) === "rtl"
+  const { weekStart } = useUser().company
   const ref = useRef<HTMLDivElement>(null)
-  const open = grid.filter((day) => day?.status).map((day) => day!.day)
+  const open = grid
+    .filter((day) => day?.status && day.date <= today)
+    .map((day) => day!.date)
   const [focused, setFocused] = useState<PlainDate | null>(null)
   const active =
     focused && open.includes(focused)
       ? focused
-      : open.includes(rules.today)
-        ? rules.today
+      : open.includes(today)
+        ? today
         : open.at(-1)
-  const weekStart = DEMO_USER.company.weekStart
   const weeks = Array.from({ length: grid.length / 7 }, (_, index) =>
     grid.slice(index * 7, index * 7 + 7)
   )
@@ -302,47 +263,49 @@ function MonthGrid({
       </div>
       {weeks.map((week, index) => (
         <div key={index} role="row" className="grid grid-cols-7 gap-1">
-          {week.map((cell, column) => (
-            <div key={column} role="gridcell">
-              {cell ? (
-                <button
-                  type="button"
-                  data-day={cell.day}
-                  disabled={!cell.status}
-                  tabIndex={cell.day === active ? 0 : -1}
-                  aria-current={cell.day === rules.today ? "date" : undefined}
-                  aria-label={[
-                    format.day(cell.day, "long"),
-                    cell.status ? statusLabel(cell.status) : null,
-                    rules.holidays.get(cell.day),
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
-                  onFocus={() => setFocused(cell.day)}
-                  onClick={() => onOpen(cell.day)}
-                  className={cn(
-                    "flex h-16 w-full flex-col items-center justify-between rounded-md p-1.5 outline-none sm:h-20 sm:p-2",
-                    "focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid enabled:hover:bg-accent",
-                    (cell.status === "weekend" || !cell.status) &&
-                      "bg-muted text-muted-foreground"
-                  )}
-                >
-                  <span
+          {week.map((cell, column) => {
+            const status = cell && cell.date <= today ? cell.status : null
+            return (
+              <div key={column} role="gridcell">
+                {cell ? (
+                  <button
+                    type="button"
+                    data-day={cell.date}
+                    disabled={!status}
+                    tabIndex={cell.date === active ? 0 : -1}
+                    aria-current={cell.date === today ? "date" : undefined}
+                    aria-label={[
+                      format.day(cell.date, "long"),
+                      status ? statusLabel(status) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                    onFocus={() => setFocused(cell.date)}
+                    onClick={() => onOpen(cell.date)}
                     className={cn(
-                      "tabular flex size-7 items-center justify-center rounded-pill text-body-sm font-semibold",
-                      cell.day === rules.today &&
-                        "border-[1.5px] border-border-strong bg-brand-subtle"
+                      "flex h-16 w-full flex-col items-center justify-between rounded-md p-1.5 outline-none sm:h-20 sm:p-2",
+                      "focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid enabled:hover:bg-accent",
+                      (status === "weekend" || !status) &&
+                        "bg-muted text-muted-foreground"
                     )}
                   >
-                    {format.number(Number(cell.day.slice(8)))}
-                  </span>
-                  {cell.status && cell.status !== "weekend" ? (
-                    <StatusBar status={cell.status} />
-                  ) : null}
-                </button>
-              ) : null}
-            </div>
-          ))}
+                    <span
+                      className={cn(
+                        "tabular flex size-7 items-center justify-center rounded-pill text-body-sm font-semibold",
+                        cell.date === today &&
+                          "border-[1.5px] border-border-strong bg-brand-subtle"
+                      )}
+                    >
+                      {format.number(Number(cell.date.slice(8)))}
+                    </span>
+                    {status && status !== "weekend" ? (
+                      <StatusBar status={status} />
+                    ) : null}
+                  </button>
+                ) : null}
+              </div>
+            )
+          })}
         </div>
       ))}
     </div>
@@ -358,13 +321,10 @@ function DayList({
 }) {
   const t = useTranslations("attendance.history")
   const format = useFormat()
-  const range = (record?: DayRecord) => {
-    const sessions = record?.sessions ?? []
-    const first = sessions[0]
-    const last = sessions.at(-1)
-    if (!first) return null
-    return `${format.time(first.in)} – ${last?.out ? format.time(last.out) : "…"}`
-  }
+  const range = (day: Day) =>
+    day.firstIn
+      ? `${format.time(day.firstIn)} – ${day.lastOut ? format.time(day.lastOut) : "…"}`
+      : null
 
   return (
     <ul
@@ -372,20 +332,20 @@ function DayList({
       className="flex flex-col divide-y rounded-lg border bg-card"
     >
       {[...days].reverse().map((day) => (
-        <li key={day.day}>
+        <li key={day.date}>
           <button
             type="button"
-            onClick={() => onOpen(day.day)}
+            onClick={() => onOpen(day.date)}
             className="flex min-h-11 w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-start outline-none hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
           >
             <span className="w-24 shrink-0 font-semibold">
-              {format.day(day.day)}
+              {format.day(day.date)}
             </span>
             <Status status={day.status!} size="sm" />
             <span className="tabular ms-auto flex gap-3 text-body-sm text-muted-foreground">
-              {range(day.record) ? (
+              {range(day) ? (
                 <bdi dir="ltr" className="hidden sm:inline">
-                  {range(day.record)}
+                  {range(day)}
                 </bdi>
               ) : null}
               {day.worked ? <span>{format.duration(day.worked)}</span> : null}
@@ -398,38 +358,80 @@ function DayList({
 }
 
 /** docs/design-system/components/drawer.md › day detail, with the change timeline. */
-function DayDrawer({
-  day,
-  rules,
-  now,
+export function DayDrawer({
+  detail,
+  today,
+  serverNow,
   onClose,
+  children,
 }: {
-  day: Day | null
-  rules: AttendanceRules
-  now: number
+  detail: DayDetail | null
+  today: PlainDate
+  serverNow: number
   onClose: () => void
+  /** HR's correction tools; also puts the employee's name in the title. */
+  children?: React.ReactNode
 }) {
   const t = useTranslations("attendance.day")
   const tAll = useTranslations()
   const format = useFormat()
   const names = useCalendarNames()
-  const corrections = day?.record?.corrections ?? []
-  const sessions = day?.record?.sessions ?? []
+  const statusLabel = useStatusLabel()
+  const now = useNow(serverNow)
+  const day = detail?.day
+  const status = day && day.date <= today ? day.status : null
+  const sessions = detail?.sessions ?? []
+  const history = detail?.history ?? []
+  const sessionsText = (value?: { in: string; out?: string }[]) =>
+    value?.length
+      ? value
+          .map(
+            (session) =>
+              `${format.time(session.in)}–${session.out ? format.time(session.out) : "…"}`
+          )
+          .join(", ")
+      : "—"
+  const fieldsOf = (change: DayChange) => [
+    ...(change.after.sessions
+      ? [
+          {
+            label: t("fields.sessions"),
+            from: sessionsText(change.before.sessions),
+            to: sessionsText(change.after.sessions),
+          },
+        ]
+      : []),
+    ...(change.after.status !== undefined
+      ? [
+          {
+            label: t("fields.status"),
+            from: change.before.status
+              ? statusLabel(change.before.status)
+              : "—",
+            to: change.after.status ? statusLabel(change.after.status) : "—",
+          },
+        ]
+      : []),
+  ]
 
   return (
-    <Sheet open={day !== null} onOpenChange={(open) => !open && onClose()}>
+    <Sheet open={!!status} onOpenChange={(open) => !open && onClose()}>
       <SheetContent size="wide" closeLabel={tAll("common.close")}>
-        {day ? (
+        {detail && day && status ? (
           <>
             <SheetHeader>
               <div className="flex flex-col gap-2">
-                <SheetTitle>{format.day(day.day, "long")}</SheetTitle>
+                <SheetTitle>
+                  {children
+                    ? `${detail.employee.name} · ${format.day(day.date, "long")}`
+                    : format.day(day.date, "long")}
+                </SheetTitle>
                 <SheetDescription asChild>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Status status={day.status!} />
-                    {corrections.length ? (
-                      <StatusFlag flag="corrected" />
-                    ) : null}
+                    <Status status={status} />
+                    {day.flags.map((flag) => (
+                      <StatusFlag key={flag} flag={flag} />
+                    ))}
                   </div>
                 </SheetDescription>
               </div>
@@ -452,22 +454,21 @@ function DayDrawer({
                 {sessions.length ? (
                   <SessionList
                     sessions={sessions}
-                    now={day.day === rules.today ? now : null}
+                    now={day.date === today ? now : null}
                     label={t("sessions")}
                   />
                 ) : (
                   <p className="text-body text-muted-foreground">
-                    {rules.holidays.get(day.day) ??
-                      t(
-                        `noSessions.${NO_SESSION_REASONS.find((reason) => reason === day.status) ?? "absent"}`
-                      )}
+                    {t(
+                      `noSessions.${NO_SESSION_REASONS.find((reason) => reason === status) ?? "absent"}`
+                    )}
                   </p>
                 )}
-                {day.status === "missing" ? (
+                {status === "missing" && !children ? (
                   <div className="flex flex-col items-start gap-2 rounded-md bg-warning-bg px-3 py-2 text-body-sm text-warning">
                     <p>{t("missingHint")}</p>
                     <Link
-                      href={`/requests/new?type=ATTENDANCE_CORRECTION&date=${day.day}`}
+                      href={`/requests/new?type=ATTENDANCE_CORRECTION&date=${day.date}`}
                       className="inline-flex items-center gap-1 font-semibold underline underline-offset-4"
                     >
                       {t("requestCorrection")}
@@ -479,6 +480,7 @@ function DayDrawer({
                   </div>
                 ) : null}
               </section>
+              {children}
               <section
                 aria-labelledby="day-history"
                 className="flex flex-col gap-3"
@@ -486,7 +488,7 @@ function DayDrawer({
                 <h3 id="day-history" className="text-body-lg font-bold">
                   {t("history")}
                 </h3>
-                {corrections.length ? (
+                {history.length ? (
                   <ChangesTimeline
                     label={t("history")}
                     labels={{
@@ -495,22 +497,18 @@ function DayDrawer({
                       changedTo: t("changedTo"),
                       showAll: (count) => t("showAll", { count }),
                     }}
-                    events={[...corrections].reverse().map((change) => ({
+                    events={history.map((change) => ({
                       id: change.id,
-                      action: t("corrected"),
-                      actor: change.actor,
+                      // Dynamic key: an unknown action shows as the API sent it.
+                      action: t.has(`actions.${change.action}` as never)
+                        ? t(`actions.${change.action}` as never)
+                        : change.action,
+                      actor: change.actor ?? t("system"),
                       at: names.dateTime.format(new Date(change.at)),
                       dateTime: change.at,
-                      source:
-                        change.source === "request"
-                          ? t("fromRequest", { id: change.requestId ?? "" })
-                          : t("manual"),
-                      fields: change.fields.map((field) => ({
-                        label: t(`fields.${field.field}`),
-                        from: field.from ? format.time(field.from) : "—",
-                        to: format.time(field.to),
-                      })),
-                      reason: change.reason,
+                      source: t(`source.${change.source}`),
+                      fields: fieldsOf(change),
+                      reason: change.reason ?? undefined,
                     }))}
                   />
                 ) : (

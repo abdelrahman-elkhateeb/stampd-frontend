@@ -830,7 +830,9 @@
         "non-working": "Today isn't a working day. You can still check in if you're working.",
         "on-leave": "You're on approved leave today. You can still check in if you're working."
       },
-      "requestCorrection": "Request correction"
+      "requestCorrection": "Request correction",
+      "noOpenSession": "You're already checked out.",
+      "notTracked": "Attendance isn't tracked for you, so there's nothing to check in."
     },
     "history": {
       "title": "History",
@@ -867,18 +869,28 @@
       "missingHint": "This day has no check-out. Request a correction so HR can fix it.",
       "history": "Change history",
       "noChanges": "No changes to this day.",
-      "corrected": "Corrected the day",
-      "manual": "Manual",
-      "fromRequest": "Approved request #{id}",
       "was": "was",
       "now": "now",
       "changedTo": "changed to",
       "showAll": "Show all ({count})",
+      "requestCorrection": "Request correction",
       "fields": {
-        "checkIn": "Check-in",
-        "checkOut": "Check-out"
+        "sessions": "Sessions",
+        "status": "Status"
       },
-      "requestCorrection": "Request correction"
+      "actions": {
+        "attendance": {
+          "recorded": "Recorded the day",
+          "corrected": "Corrected the day",
+          "closed": "Closed the day"
+        }
+      },
+      "system": "System",
+      "source": {
+        "USER": "Manual",
+        "APPROVAL": "Approved request",
+        "SYSTEM_JOB": "Automatic"
+      }
     }
   },
   "requests": {

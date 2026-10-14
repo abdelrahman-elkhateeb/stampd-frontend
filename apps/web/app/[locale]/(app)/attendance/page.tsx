@@ -12,12 +12,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page({
   params,
+  searchParams,
 }: PageProps<"/[locale]/attendance">) {
   setRequestLocale((await params).locale as Locale)
   return (
     // Month, view and open day live in the URL (nuqs), which needs a Suspense boundary.
     <Suspense>
-      <AttendancePage />
+      <AttendancePage searchParams={await searchParams} />
     </Suspense>
   )
 }

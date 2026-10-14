@@ -30,9 +30,9 @@ export type MeResponse = {
   }
 }
 
-const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+export const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
 
-const toWeekday = (code: string) => WEEKDAYS.indexOf(code) as Weekday
+export const toWeekday = (code: string) => WEEKDAYS.indexOf(code) as Weekday
 
 export const toRole = (role: MeResponse["role"]) => role.toLowerCase() as Role
 

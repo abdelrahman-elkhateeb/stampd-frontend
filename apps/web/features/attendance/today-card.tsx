@@ -19,16 +19,13 @@ import { Card } from "@workspace/ui/components/card"
 import { Skeleton, SkeletonGroup } from "@workspace/ui/components/skeleton"
 import { notify } from "@workspace/ui/components/sonner"
 
-import { companyToday, demoRules, type Session } from "./demo-data"
-import {
-  clockMinutes,
-  dayStatus,
-  missedCheckout,
-  openSession,
-  todayWarning,
-  workedMinutes,
-} from "./rules"
-import { checkInNow, checkOutNow, useAttendanceRecords, useNow } from "./store"
+import type { CompanySettings } from "@/features/settings/settings-data"
+import type { PlainDate } from "@workspace/ui/components/date-picker"
+
+import { checkIn, checkOut } from "./actions"
+import type { Today } from "./attendance-data"
+import { useNow } from "./clock"
+import { clockMinutes, workedMinutes, type Session } from "./rules"
 
 function subscribeOnline(listener: () => void) {
   window.addEventListener("online", listener)
@@ -39,13 +36,29 @@ function subscribeOnline(listener: () => void) {
   }
 }
 
+type Hours = Pick<CompanySettings, "workStart" | "workEnd" | "graceMinutes">
+
+const WARNINGS = {
+  leave: "on-leave",
+  holiday: "holiday",
+  weekend: "non-working",
+} as const
+
 /** docs/design-system/components/today-card.md · shared with the dashboard (FE-09). */
-export function TodayCard() {
+export function TodayCard({
+  today,
+  hours,
+  missed,
+}: {
+  today: Today
+  hours: Hours
+  /** The last day worked, when it was left without a check-out. */
+  missed: PlainDate | null
+}) {
   const t = useTranslations("attendance.today")
   const tAll = useTranslations()
   const format = useFormat()
-  const records = useAttendanceRecords()
-  const now = useNow()
+  const now = useNow(today.serverNow)
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -55,7 +68,7 @@ export function TodayCard() {
   const [failed, setFailed] = useState(false)
   const [announcement, setAnnouncement] = useState("")
 
-  if (!records || now === null) {
+  if (now === null) {
     return (
       <SkeletonGroup
         label={t("loading")}
@@ -69,50 +82,54 @@ export function TodayCard() {
     )
   }
 
-  const rules = demoRules(companyToday(now))
-  const record = records.find((item) => item.date === rules.today)
-  const sessions = record?.sessions ?? []
-  const open = openSession(record)
-  const status = dayStatus(rules.today, record, rules) ?? "not-yet"
+  const { sessions } = today
+  const open = sessions.some((session) => !session.out)
+  const status = today.status ?? "not-yet"
   const worked = workedMinutes(sessions, now)
-  const warning = todayWarning(record, rules)
-  const missed = missedCheckout(records, rules)
-  const shift = clockMinutes(rules.workEnd) - clockMinutes(rules.workStart)
+  const warning =
+    today.status && today.status in WARNINGS
+      ? WARNINGS[today.status as keyof typeof WARNINGS]
+      : null
+  const shift = clockMinutes(hours.workEnd) - clockMinutes(hours.workStart)
   const progress = Math.min(100, Math.round((worked / shift) * 100))
-  const graceEnd = clockMinutes(rules.workStart) + rules.graceMinutes
+  const graceEnd = clockMinutes(hours.workStart) + hours.graceMinutes
   const graceEndLabel = `${String(Math.floor(graceEnd / 60)).padStart(2, "0")}:${String(graceEnd % 60).padStart(2, "0")}`
 
   async function act() {
     setBusy(true)
     setFailed(false)
-    try {
+    const result = await (open ? checkOut() : checkIn()).catch(() => ({
+      problem: { code: "UNAVAILABLE", fieldErrors: [] },
+    }))
+    setBusy(false)
+    if ("at" in result && result.at) {
+      const time = format.time(result.at)
       if (open) {
-        const time = format.time(await checkOutNow())
         notify.success(t("checkedOutToast", { time }))
         setAnnouncement(t("checkedOutToast", { time }))
       } else {
-        const at = await checkInNow()
-        const after = dayStatus(
-          rules.today,
-          { date: rules.today, sessions: [...sessions, { in: at }] },
-          rules
-        )
-        notify.success(t("checkedInToast", { time: format.time(at) }))
+        notify.success(t("checkedInToast", { time }))
         setAnnouncement(
           t("checkedInAnnouncement", {
-            status: after === "late" ? "late" : "present",
+            status: result.late ? "late" : "present",
           })
         )
       }
-    } catch {
-      setFailed(true)
-      notify.error(t("error"), {
-        label: tAll("common.tryAgain"),
-        onClick: () => void act(),
-      })
-    } finally {
-      setBusy(false)
+      return
     }
+    // Already checked out elsewhere, or attendance isn't tracked: the page now shows why.
+    const code = result.problem?.code
+    if (code === "NO_OPEN_SESSION" || code === "ATTENDANCE_NOT_TRACKED") {
+      notify.error(
+        t(code === "NO_OPEN_SESSION" ? "noOpenSession" : "notTracked")
+      )
+      return
+    }
+    setFailed(true)
+    notify.error(t("error"), {
+      label: tAll("common.tryAgain"),
+      onClick: () => void act(),
+    })
   }
 
   const label = !online
@@ -132,7 +149,7 @@ export function TodayCard() {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="today-title" className="text-h4 font-bold">
-          {t("title", { date: format.day(rules.today) })}
+          {t("title", { date: format.day(today.date) })}
         </h2>
         <Status status={status} size="sm" />
       </div>
@@ -159,8 +176,8 @@ export function TodayCard() {
         </p>
         <p className="text-body-sm text-muted-foreground">
           {t("shift", {
-            start: rules.workStart,
-            end: rules.workEnd,
+            start: hours.workStart,
+            end: hours.workEnd,
             grace: graceEndLabel,
           })}
         </p>
@@ -187,6 +204,12 @@ export function TodayCard() {
         <SessionList sessions={sessions} now={now} label={t("sessions")} />
       ) : null}
 
+      {today.tracksAttendance ? null : (
+        <p className="flex gap-2 rounded-md bg-info-bg px-3 py-2 text-body-sm text-info">
+          <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {t("notTracked")}
+        </p>
+      )}
       {warning ? (
         <p className="flex gap-2 rounded-md bg-info-bg px-3 py-2 text-body-sm text-info">
           <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -222,6 +245,7 @@ export function TodayCard() {
           className="w-full sm:w-fit sm:min-w-56"
           leadingIcon={open ? LogOutIcon : LogInIcon}
           loading={busy}
+          disabled={!today.tracksAttendance}
           loadingLabel={t(open ? "checkingOut" : "checkingIn")}
           onClick={act}
           aria-describedby={failed ? "today-error" : undefined}
