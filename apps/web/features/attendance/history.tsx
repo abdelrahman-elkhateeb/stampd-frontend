@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  ArrowRightIcon,
   CalendarDaysIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -16,6 +17,7 @@ import { getDirection } from "@/i18n/locale"
 import type { Locale } from "@/i18n/routing"
 import { DEMO_USER } from "@/lib/demo-user"
 import { isPlainDate } from "@/lib/format"
+import { Link } from "@/i18n/navigation"
 import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
@@ -462,9 +464,19 @@ function DayDrawer({
                   </p>
                 )}
                 {day.status === "missing" ? (
-                  <p className="rounded-md bg-warning-bg px-3 py-2 text-body-sm text-warning">
-                    {t("missingHint")}
-                  </p>
+                  <div className="flex flex-col items-start gap-2 rounded-md bg-warning-bg px-3 py-2 text-body-sm text-warning">
+                    <p>{t("missingHint")}</p>
+                    <Link
+                      href={`/requests/new?type=correction&date=${day.day}`}
+                      className="inline-flex items-center gap-1 font-semibold underline underline-offset-4"
+                    >
+                      {t("requestCorrection")}
+                      <ArrowRightIcon
+                        aria-hidden
+                        className="flip-rtl size-3.5"
+                      />
+                    </Link>
+                  </div>
                 ) : null}
               </section>
               <section

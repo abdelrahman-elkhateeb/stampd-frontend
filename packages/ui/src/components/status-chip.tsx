@@ -325,4 +325,10 @@ function StatusBar({
   )
 }
 
-export { FlagChip, StatusBar, StatusChip }
+/** Icon and tone classes for a status, e.g. timeline markers that must match the chips. */
+function statusMeta(status: ChipStatus) {
+  const { icon, tone, flip } = STATUS_META[status]
+  return { icon, tone, flip }
+}
+
+export { FlagChip, StatusBar, StatusChip, statusMeta }

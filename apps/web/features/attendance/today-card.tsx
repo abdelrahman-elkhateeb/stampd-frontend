@@ -199,12 +199,11 @@ export function TodayCard() {
           <span className="flex-1">
             {t("missed", { date: format.day(missed) })}
           </span>
-          {/* ponytail: opens the day; link the correction form here once FE-08 ships it. */}
           <Link
-            href={`/attendance?day=${missed}`}
+            href={`/requests/new?type=correction&date=${missed}`}
             className="inline-flex items-center gap-1 font-semibold underline underline-offset-4"
           >
-            {t("viewDay")}
+            {t("requestCorrection")}
             <ArrowRightIcon aria-hidden className="flip-rtl size-3.5" />
           </Link>
         </div>
