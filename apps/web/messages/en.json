@@ -1131,5 +1131,50 @@
     },
     "noDecided": "Nothing decided yet",
     "pick": "Pick a request to review it."
+  },
+  "dashboard": {
+    "greeting": "Hello, {name}",
+    "balances": "Leave balances",
+    "myLeave": "My leave",
+    "pending": "Waiting for a decision",
+    "myRequests": "My requests",
+    "noPending": "Nothing waiting for a decision.",
+    "upcoming": "Upcoming time off",
+    "noUpcoming": "No time off coming up.",
+    "date": "Date",
+    "expected": "{count, plural, one {# person expected today} other {# people expected today}}",
+    "notWorking": "Today isn't a working day.",
+    "buckets": {
+      "present": "Present",
+      "late": "Late",
+      "absent": "Absent",
+      "wfh": "WFH",
+      "onLeave": "On leave",
+      "businessTrip": "Business trip",
+      "notYetCheckedIn": "Not yet in"
+    },
+    "month": {
+      "late": "Late this month",
+      "absences": "Absences this month",
+      "missingCheckouts": "Missing check-outs"
+    },
+    "team": {
+      "title": "My team today",
+      "approvals": "{count, plural, =0 {No approvals waiting} one {# approval waiting} other {# approvals waiting}}",
+      "outNext14": "Out in the next 14 days",
+      "nobodyOut": "Nobody is out in the next 14 days.",
+      "thisMonth": "This month"
+    },
+    "company": {
+      "title": "Company today",
+      "pendingByType": "Pending requests",
+      "review": "Review",
+      "noPending": "No requests waiting.",
+      "overdue": "{count} over 3 days",
+      "exceptions": "Exceptions this month",
+      "leaveUsage": "Leave used in {year}",
+      "usage": "{taken} of {entitled} days",
+      "trend": "Attendance, last 30 days"
+    }
   }
 }

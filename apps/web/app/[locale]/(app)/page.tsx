@@ -1,26 +1,63 @@
+import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 
-import { SetupChecklist } from "@/features/onboarding/setup-checklist"
+import { getToday } from "@/features/attendance/attendance-data"
+import {
+  getAdminSummary,
+  getManagerSummary,
+  getUpcomingTimeOff,
+} from "@/features/dashboard/dashboard-data"
+import { DashboardPage } from "@/features/dashboard/dashboard-page"
+import { getBalances } from "@/features/employees/employee-data"
+import {
+  getLeaveTypeNames,
+  getMyRequests,
+  getRequestTypes,
+} from "@/features/requests/request-data"
+import { getCompanySettings } from "@/features/settings/settings-data"
 import type { Locale } from "@/i18n/routing"
 import { getMe } from "@/lib/api"
 
-// Placeholder until FE-09 builds the dashboard.
-export default async function HomePage({ params }: PageProps<"/[locale]">) {
-  const { locale } = await params
-  setRequestLocale(locale as Locale)
-  const [t, user] = await Promise.all([getTranslations("home"), getMe()])
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("nav")
+  return { title: t("dashboard") }
+}
 
+export default async function HomePage({ params }: PageProps<"/[locale]">) {
+  setRequestLocale((await params).locale as Locale)
+  const me = await getMe()
+  const [
+    today,
+    settings,
+    balances,
+    pending,
+    upcoming,
+    manager,
+    admin,
+    types,
+    leaveTypes,
+  ] = await Promise.all([
+    getToday(),
+    getCompanySettings(),
+    getBalances(me.id),
+    getMyRequests({ status: "pending,cancel-requested" }),
+    getUpcomingTimeOff(),
+    me.role === "employee" ? null : getManagerSummary(),
+    me.role === "admin" ? getAdminSummary() : null,
+    getRequestTypes(),
+    getLeaveTypeNames(),
+  ])
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-h2 font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("body")}</p>
-      </div>
-      {user.role === "admin" ? (
-        <div className="max-w-2xl">
-          <SetupChecklist />
-        </div>
-      ) : null}
-    </div>
+    <DashboardPage
+      today={today}
+      hours={settings}
+      balances={balances.filter((balance) => balance.tracked)}
+      pending={pending.slice(0, 5)}
+      upcoming={upcoming}
+      manager={manager}
+      admin={admin}
+      types={types}
+      leaveTypes={leaveTypes}
+    />
   )
 }
