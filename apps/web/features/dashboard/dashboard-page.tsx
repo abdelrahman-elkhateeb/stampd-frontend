@@ -74,7 +74,8 @@ export function DashboardPage({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
+      {/* The mobile top bar already greets; the heading stays for screen readers. */}
+      <div className="flex flex-col gap-1 max-md:sr-only">
         <h1 className="text-h2 font-bold">
           {t("greeting", { name: user.name.split(" ")[0] ?? "" })}
         </h1>
@@ -82,12 +83,6 @@ export function DashboardPage({
           {format.day(today.date, "long")}
         </p>
       </div>
-
-      {admin ? (
-        <div className="max-w-2xl">
-          <SetupChecklist />
-        </div>
-      ) : null}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
         {/* Mobile: Today above the fold (layout.md). */}
@@ -135,6 +130,11 @@ export function DashboardPage({
         </div>
       </div>
 
+      {admin ? (
+        <div className="max-w-2xl">
+          <SetupChecklist />
+        </div>
+      ) : null}
       {manager ? <TeamSection summary={manager} /> : null}
       {admin ? <CompanySection summary={admin} /> : null}
     </div>

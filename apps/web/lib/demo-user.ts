@@ -1,7 +1,7 @@
 import type { Role } from "@/lib/user"
 import type { PlainDate, Weekday } from "@workspace/ui/components/date-picker"
 
-// ponytail: feature demo data still reads this user; each screen moves to useUser()/getMe() when it's wired to the API.
+// The dev gallery renders outside the app shell, so it gets this user instead of getMe().
 export const DEMO_USER = {
   id: "u-sara",
   name: "Sara Al-Harbi",

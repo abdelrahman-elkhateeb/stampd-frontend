@@ -58,7 +58,7 @@ const RUN = {
   acceptCancellation,
 }
 
-/** Approving is one click with no confirm (approve-reject.md). */
+/** Approving is one click with no confirm (approve-reject.md). ponytail: commits at once, no Undo window or comment; add when approvers ask. */
 const DIRECT: Action[] = ["approve", "acceptCancellation"]
 /** These need a reason. */
 const REASONED: Action[] = ["adminCancel", "reject", "declineCancellation"]

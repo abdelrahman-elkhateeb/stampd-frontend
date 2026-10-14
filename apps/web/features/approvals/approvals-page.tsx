@@ -23,6 +23,7 @@ type Tab = "pending" | "decided"
 /**
  * FE-10 approvals: the inbox beside the review panel (review-panel.md). The URL holds the
  * tab and the open request (?tab=decided&request=…); deciding re-renders both from the server.
+ * ponytail: no balance-after or teammates-out in the panel (managers can't preview others' leave).
  */
 export function ApprovalsPage({
   tab,

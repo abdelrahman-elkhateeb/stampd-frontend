@@ -3,10 +3,6 @@
     "name": "Stampd",
     "tagline": "Attendance, leave and requests for your team"
   },
-  "home": {
-    "title": "Stampd is being built",
-    "body": "The foundation is ready. Screens arrive with the next tickets."
-  },
   "locale": {
     "label": "Language",
     "en": "English",
