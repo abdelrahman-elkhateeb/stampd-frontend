@@ -1,4 +1,4 @@
-import type { Role } from "@/lib/demo-user"
+import type { Role } from "@/lib/user"
 
 /** The path itself or anything under it: "/team" matches "/team/42", not "/teams". */
 export function matchesPath(pathname: string, href: string) {
@@ -18,7 +18,12 @@ const RESTRICTED: [href: string, roles: Role[]][] = [
   ["/settings", ["admin"]],
 ]
 
+/** Who may open the path; undefined means every signed-in user. */
+export function rolesFor(pathname: string) {
+  return RESTRICTED.find(([href]) => matchesPath(pathname, href))?.[1]
+}
+
 export function canAccess(role: Role, pathname: string) {
-  const rule = RESTRICTED.find(([href]) => matchesPath(pathname, href))
-  return !rule || rule[1].includes(role)
+  const roles = rolesFor(pathname)
+  return !roles || roles.includes(role)
 }

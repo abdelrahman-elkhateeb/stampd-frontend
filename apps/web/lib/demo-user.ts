@@ -1,8 +1,7 @@
+import type { Role } from "@/lib/user"
 import type { PlainDate, Weekday } from "@workspace/ui/components/date-picker"
 
-export type Role = "employee" | "manager" | "admin"
-
-// ponytail: static stand-in until the backend serves GET /me; swap for the real user then.
+// ponytail: feature demo data still reads this user; each screen moves to useUser()/getMe() when it's wired to the API.
 export const DEMO_USER = {
   id: "u-sara",
   name: "Sara Al-Harbi",
@@ -22,6 +21,4 @@ export const DEMO_USER = {
     // The GCC week: Sunday to Thursday.
     workingDays: [0, 1, 2, 3, 4] as Weekday[],
   },
-  // ponytail: fixed counts until the dashboard summary and bell poll exist (FE-10, FE-15).
-  counts: { approvals: 7, notifications: 3 },
 }

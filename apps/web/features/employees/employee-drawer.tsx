@@ -13,7 +13,7 @@ import {
   useFieldError,
 } from "@/components/form-fields"
 import { DateField } from "@/components/pickers"
-import type { Role } from "@/lib/demo-user"
+import type { Role } from "@/lib/user"
 import { codeErrorMap } from "@/lib/forms"
 import { Button } from "@workspace/ui/components/button"
 import { ConfirmDialog } from "@workspace/ui/components/confirm-dialog"

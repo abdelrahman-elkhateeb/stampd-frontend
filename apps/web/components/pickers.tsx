@@ -4,7 +4,7 @@ import { ar as dateFnsAr, enGB as dateFnsEnGb } from "date-fns/locale"
 import { useLocale, useTranslations } from "next-intl"
 import { useId } from "react"
 
-import { DEMO_USER } from "@/lib/demo-user"
+import { useUser } from "@/components/user-provider"
 import { useFormat } from "@/lib/use-format"
 import {
   DatePicker,
@@ -24,9 +24,10 @@ import { TimeInput } from "@workspace/ui/components/time-input"
 /** Week start, working days and month names from the company and the user's language. */
 function useCompanyCalendar(holidays?: Holiday[]) {
   const locale = useLocale()
+  const { company } = useUser()
   return {
-    weekStartsOn: DEMO_USER.company.weekStart,
-    workingDays: DEMO_USER.company.workingDays,
+    weekStartsOn: company.weekStart,
+    workingDays: company.workingDays,
     holidays,
     locale: locale === "ar" ? dateFnsAr : dateFnsEnGb,
   }
@@ -144,6 +145,7 @@ export function TimeField({
 }) {
   const t = useTranslations("time")
   const id = useId()
+  const { timezone } = useUser().company
 
   return (
     <Field data-invalid={error ? true : undefined}>
@@ -159,7 +161,7 @@ export function TimeField({
         disabled={disabled}
       />
       <FieldDescription id={`${id}-description`}>
-        {t("companyTime", { zone: DEMO_USER.company.timezone })}
+        {t("companyTime", { zone: timezone })}
       </FieldDescription>
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
     </Field>

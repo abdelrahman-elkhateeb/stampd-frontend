@@ -12,7 +12,7 @@ import { useEffect, useId, useRef, useState } from "react"
 
 import { UnsavedChangesGuard } from "@/components/unsaved-changes"
 import { Link } from "@/i18n/navigation"
-import type { Role } from "@/lib/demo-user"
+import type { Role } from "@/lib/user"
 import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import { Card } from "@workspace/ui/components/card"

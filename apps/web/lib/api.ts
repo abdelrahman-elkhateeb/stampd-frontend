@@ -1,10 +1,12 @@
 import { headers, cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { getLocale } from "next-intl/server"
+import { cache } from "react"
 
 import { redirect } from "@/i18n/navigation"
 import { toApiError } from "@/lib/api-error"
 import { ACCESS_COOKIE } from "@/lib/session"
+import { toUser, type MeResponse } from "@/lib/user"
 
 export function apiUrl(path: string) {
   const base = process.env.API_BASE_URL
@@ -52,3 +54,6 @@ export async function api<T = unknown>(
     redirect({ href: "/no-access", locale })
   throw await toApiError(response)
 }
+
+/** The signed-in user; one API call per request however many components ask. */
+export const getMe = cache(async () => toUser(await api<MeResponse>("/me")))

@@ -1,5 +1,5 @@
 import { isPlainDate } from "@/lib/format"
-import type { Role } from "@/lib/demo-user"
+import type { Role } from "@/lib/user"
 import type { AccountStatus } from "@workspace/ui/components/status-chip"
 
 import type { Department, Employee, LedgerEntry } from "./demo-data"

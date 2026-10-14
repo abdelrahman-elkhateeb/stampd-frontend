@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import type { Role } from "@/lib/demo-user"
+import type { Role } from "@/lib/user"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import type { RequestStatus } from "@workspace/ui/components/status-chip"
 

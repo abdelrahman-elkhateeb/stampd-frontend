@@ -2,7 +2,9 @@ import type { Metadata } from "next"
 import { setRequestLocale } from "next-intl/server"
 import { Suspense } from "react"
 
+import { UserProvider } from "@/components/user-provider"
 import type { Locale } from "@/i18n/routing"
+import { DEMO_USER } from "@/lib/demo-user"
 
 import { Gallery } from "./gallery"
 
@@ -20,8 +22,11 @@ export default async function GalleryPage({
 
   return (
     // The table keeps its state in the URL (nuqs), which needs a Suspense boundary.
-    <Suspense>
-      <Gallery />
-    </Suspense>
+    // Outside the app shell, so the pickers and formatters get the demo user.
+    <UserProvider user={DEMO_USER}>
+      <Suspense>
+        <Gallery />
+      </Suspense>
+    </UserProvider>
   )
 }

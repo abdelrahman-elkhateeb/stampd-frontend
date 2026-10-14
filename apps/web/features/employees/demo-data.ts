@@ -1,4 +1,5 @@
-import { DEMO_USER, type Role } from "@/lib/demo-user"
+import { DEMO_USER } from "@/lib/demo-user"
+import type { Role } from "@/lib/user"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import type { AccountStatus } from "@workspace/ui/components/status-chip"
 

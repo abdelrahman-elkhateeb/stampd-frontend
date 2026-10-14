@@ -24,12 +24,13 @@ import { useLocale, useTranslations, type Messages } from "next-intl"
 import { useTheme } from "next-themes"
 
 import { LocaleSwitcher } from "@/components/locale-switcher"
+import { useUser } from "@/components/user-provider"
 import { logout } from "@/features/auth/actions"
 import { getDirection } from "@/i18n/locale"
 import { Link, usePathname } from "@/i18n/navigation"
 import type { Locale } from "@/i18n/routing"
 import { canAccess, matchesPath } from "@/lib/access"
-import { DEMO_USER } from "@/lib/demo-user"
+import type { Role } from "@/lib/user"
 import { useFormat } from "@/lib/use-format"
 import { PersonAvatar } from "@workspace/ui/components/avatar"
 import { CountBadge } from "@workspace/ui/components/badge"
@@ -57,7 +58,8 @@ import { cn } from "@workspace/ui/lib/utils"
 type NavId = Exclude<keyof Messages["nav"], "main" | "withCount" | "section">
 type NavItem = { id: NavId; href: string; icon: LucideIcon; count?: number }
 
-const user = DEMO_USER
+// ponytail: fixed counts until the dashboard summary and bell poll exist (FE-10, FE-15).
+const COUNTS = { approvals: 7, notifications: 3 }
 
 const ALL_SECTIONS: {
   id: keyof Messages["nav"]["section"]
@@ -80,7 +82,7 @@ const ALL_SECTIONS: {
         id: "approvals",
         href: "/approvals",
         icon: InboxIcon,
-        count: user.counts.approvals,
+        count: COUNTS.approvals,
       },
       { id: "myTeam", href: "/team", icon: UsersIcon },
     ],
@@ -101,25 +103,31 @@ const ALL_SECTIONS: {
 ]
 
 // lib/access.ts decides what the role sees; sections left empty are hidden.
-const SECTIONS = ALL_SECTIONS.map((section) => ({
-  ...section,
-  items: section.items.filter((item) => canAccess(user.role, item.href)),
-})).filter((section) => section.items.length > 0)
+const sectionsFor = (role: Role) =>
+  ALL_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => canAccess(role, item.href)),
+  })).filter((section) => section.items.length > 0)
 
 // The rest of the nav lives under "Me" on mobile (MoreNav).
-const BOTTOM_ITEMS: NavItem[] = [
+const bottomItemsFor = (role: Role): NavItem[] => [
   { id: "home", href: "/", icon: LayoutDashboardIcon },
   { id: "requests", href: "/requests", icon: FileTextIcon },
-  user.role === "employee"
+  role === "employee"
     ? { id: "calendar", href: "/calendar", icon: CalendarDaysIcon }
     : {
         id: "approvals",
         href: "/approvals",
         icon: InboxIcon,
-        count: user.counts.approvals,
+        count: COUNTS.approvals,
       },
   { id: "me", href: "/me", icon: CircleUserIcon },
 ]
+
+function useNav() {
+  const { role } = useUser()
+  return { sections: sectionsFor(role), bottomItems: bottomItemsFor(role) }
+}
 
 function useItemLabel() {
   const t = useTranslations("nav")
@@ -135,6 +143,8 @@ export function AppSidebar() {
   const tRole = useTranslations("roles")
   const label = useItemLabel()
   const pathname = usePathname()
+  const user = useUser()
+  const { sections } = useNav()
   const rtl = getDirection(useLocale() as Locale) === "rtl"
 
   return (
@@ -157,7 +167,7 @@ export function AppSidebar() {
       </div>
 
       <nav aria-label={t("main")} className="flex flex-col gap-5">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div
             key={section.id}
             role="group"
@@ -224,13 +234,14 @@ export function BottomNav() {
   const t = useTranslations("nav")
   const label = useItemLabel()
   const pathname = usePathname()
+  const { bottomItems } = useNav()
 
   return (
     <nav
       aria-label={t("main")}
       className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(4.5rem+env(safe-area-inset-bottom))] grid-cols-4 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      {BOTTOM_ITEMS.map((item) => {
+      {bottomItems.map((item) => {
         const active = matchesPath(pathname, item.href)
         return (
           <Link
@@ -259,11 +270,11 @@ export function BottomNav() {
   )
 }
 
-function companyToday(): PlainDate {
+function companyToday(timeZone: string): PlainDate {
   // en-CA formats as YYYY-MM-DD.
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: user.company.timezone,
-  }).format(new Date()) as PlainDate
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(
+    new Date()
+  ) as PlainDate
 }
 
 export function TopBar() {
@@ -271,10 +282,12 @@ export function TopBar() {
   const tNav = useTranslations("nav")
   const format = useFormat()
   const pathname = usePathname()
+  const user = useUser()
+  const { sections } = useNav()
   const home = pathname === "/"
-  const current = SECTIONS.flatMap((section) => section.items).find((item) =>
-    matchesPath(pathname, item.href)
-  )
+  const current = sections
+    .flatMap((section) => section.items)
+    .find((item) => matchesPath(pathname, item.href))
   const title = current
     ? tNav(current.id)
     : matchesPath(pathname, "/me")
@@ -297,7 +310,7 @@ export function TopBar() {
               {t("greeting", { name: user.name.split(" ")[0]! })}
             </p>
             <p className="truncate text-caption text-muted-foreground">
-              {format.day(companyToday(), "long")}
+              {format.day(companyToday(user.company.timezone), "long")}
             </p>
           </div>
         ) : null}
@@ -338,7 +351,7 @@ function ThemeToggle() {
 // ponytail: links to /notifications; the popover with items arrives with FE-15.
 function NotificationBell() {
   const t = useTranslations("topBar")
-  const count = user.counts.notifications
+  const count = COUNTS.notifications
   return (
     <Button
       variant="ghost"
@@ -363,6 +376,7 @@ function NotificationBell() {
 /** Desktop only; on mobile the account lives under "Me". */
 function UserMenu() {
   const t = useTranslations()
+  const user = useUser()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -425,11 +439,14 @@ function ThemeMenuGroup() {
 export function MoreNav() {
   const t = useTranslations("nav")
   const label = useItemLabel()
-  const bottom = new Set(BOTTOM_ITEMS.map((item) => item.href))
-  const sections = SECTIONS.map((section) => ({
-    ...section,
-    items: section.items.filter((item) => !bottom.has(item.href)),
-  })).filter((section) => section.items.length > 0)
+  const nav = useNav()
+  const bottom = new Set(nav.bottomItems.map((item) => item.href))
+  const sections = nav.sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !bottom.has(item.href)),
+    }))
+    .filter((section) => section.items.length > 0)
 
   return (
     <nav aria-label={t("more")} className="flex flex-col gap-5 md:hidden">

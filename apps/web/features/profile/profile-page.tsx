@@ -11,12 +11,13 @@ import { z } from "zod"
 import { MoreNav, THEMES } from "@/components/app-shell"
 import { PasswordField, TextField } from "@/components/form-fields"
 import { LocaleSwitcher } from "@/components/locale-switcher"
+import { useUser } from "@/components/user-provider"
 import { logout } from "@/features/auth/actions"
-import { DEMO_USER } from "@/lib/demo-user"
 import { codeErrorMap } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
 import { useFormat } from "@/lib/use-format"
 import { PersonAvatar } from "@workspace/ui/components/avatar"
+import type { PlainDate } from "@workspace/ui/components/date-picker"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -32,7 +33,18 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 
-const user = DEMO_USER
+// ponytail: /me has no job details, so they show blank until the profile reads GET /employees/{id}.
+function useProfile() {
+  return {
+    ...useUser(),
+    jobTitle: "",
+    phone: "",
+    employeeCode: "",
+    department: "",
+    manager: "",
+    joinedOn: undefined as PlainDate | undefined,
+  }
+}
 
 export function ProfilePage() {
   const t = useTranslations("profile")
@@ -77,6 +89,7 @@ const PHOTO_MAX_BYTES = 2 * 1024 * 1024
 function IdentityCard() {
   const t = useTranslations("profile")
   const tRole = useTranslations("roles")
+  const user = useProfile()
   const input = useRef<HTMLInputElement>(null)
   const [photo, setPhoto] = useState<string>()
   const [photoError, setPhotoError] = useState<string>()
@@ -111,7 +124,7 @@ function IdentityCard() {
             <bdi>{user.name}</bdi>
           </h2>
           <p className="truncate text-body text-muted-foreground">
-            {user.jobTitle} · {tRole(user.role)}
+            {[user.jobTitle, tRole(user.role)].filter(Boolean).join(" · ")}
           </p>
         </div>
       </div>
@@ -152,6 +165,7 @@ const PhoneBody = z.object({
 function DetailsCard() {
   const t = useTranslations("profile")
   const format = useFormat()
+  const user = useProfile()
   const form = useForm({
     resolver: zodResolver(PhoneBody, codeErrorMap),
     defaultValues: { phone: user.phone },
@@ -168,7 +182,7 @@ function DetailsCard() {
     [t("details.employeeCode"), user.employeeCode, "ltr"],
     [t("details.department"), user.department],
     [t("details.manager"), user.manager],
-    [t("details.joined"), format.day(user.joinedOn, "long")],
+    [t("details.joined"), user.joinedOn && format.day(user.joinedOn, "long")],
   ] as const
 
   return (
@@ -263,17 +277,20 @@ function PreferencesCard() {
   )
 }
 
-const PasswordBody = z
-  .object({ current: z.string().min(1), password: NewPassword })
-  .refine(
-    (body) => !passwordRulesIssue(body.password, [user.name, user.email]),
-    { path: ["password"], message: "WEAK_PASSWORD" }
-  )
+const passwordBody = (personal: string[]) =>
+  z
+    .object({ current: z.string().min(1), password: NewPassword })
+    .refine((body) => !passwordRulesIssue(body.password, personal), {
+      path: ["password"],
+      message: "WEAK_PASSWORD",
+    })
 
 function PasswordCard() {
   const t = useTranslations("profile.password")
+  const user = useUser()
+  const personal = [user.name, user.email]
   const form = useForm({
-    resolver: zodResolver(PasswordBody, codeErrorMap),
+    resolver: zodResolver(passwordBody(personal), codeErrorMap),
     defaultValues: { current: "", password: "" },
   })
 
@@ -302,7 +319,7 @@ function PasswordCard() {
             name="password"
             label={t("new")}
             variant="new"
-            personal={[user.name, user.email]}
+            personal={personal}
           />
         </FieldGroup>
         <CardFooter>
