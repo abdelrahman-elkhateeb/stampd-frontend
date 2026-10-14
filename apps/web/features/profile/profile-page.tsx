@@ -13,11 +13,11 @@ import { PasswordField, TextField } from "@/components/form-fields"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { useUser } from "@/components/user-provider"
 import { logout } from "@/features/auth/actions"
+import type { Profile } from "@/features/profile/profile-data"
 import { codeErrorMap } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
 import { useFormat } from "@/lib/use-format"
 import { PersonAvatar } from "@workspace/ui/components/avatar"
-import type { PlainDate } from "@workspace/ui/components/date-picker"
 import { Button } from "@workspace/ui/components/button"
 import {
   Card,
@@ -33,20 +33,7 @@ import {
   ToggleGroupItem,
 } from "@workspace/ui/components/toggle-group"
 
-// ponytail: /me has no job details, so they show blank until the profile reads GET /employees/{id}.
-function useProfile() {
-  return {
-    ...useUser(),
-    jobTitle: "",
-    phone: "",
-    employeeCode: "",
-    department: "",
-    manager: "",
-    joinedOn: undefined as PlainDate | undefined,
-  }
-}
-
-export function ProfilePage() {
+export function ProfilePage({ profile }: { profile: Profile }) {
   const t = useTranslations("profile")
   const tAuth = useTranslations("auth")
 
@@ -59,8 +46,8 @@ export function ProfilePage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-6">
         <div className="flex flex-col gap-4 lg:gap-6">
-          <IdentityCard />
-          <DetailsCard />
+          <IdentityCard profile={profile} />
+          <DetailsCard profile={profile} />
         </div>
         <div className="flex flex-col gap-4 lg:gap-6">
           <PreferencesCard />
@@ -86,12 +73,12 @@ export function ProfilePage() {
 const PHOTO_TYPES = ["image/jpeg", "image/png"]
 const PHOTO_MAX_BYTES = 2 * 1024 * 1024
 
-function IdentityCard() {
+function IdentityCard({ profile }: { profile: Profile }) {
   const t = useTranslations("profile")
   const tRole = useTranslations("roles")
-  const user = useProfile()
+  const user = { ...useUser(), ...profile }
   const input = useRef<HTMLInputElement>(null)
-  const [photo, setPhoto] = useState<string>()
+  const [photo, setPhoto] = useState(profile.photoUrl)
   const [photoError, setPhotoError] = useState<string>()
 
   // ponytail: no crop step and no upload (BE-05); the photo shows locally until reload.
@@ -162,10 +149,10 @@ const PhoneBody = z.object({
   phone: z.string().regex(/^\+?[0-9][0-9 ]{6,18}$/),
 })
 
-function DetailsCard() {
+function DetailsCard({ profile }: { profile: Profile }) {
   const t = useTranslations("profile")
   const format = useFormat()
-  const user = useProfile()
+  const user = { ...useUser(), ...profile }
   const form = useForm({
     resolver: zodResolver(PhoneBody, codeErrorMap),
     defaultValues: { phone: user.phone },

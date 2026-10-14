@@ -125,6 +125,6 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next internals, Vercel internals and files with an extension.
-  matcher: "/((?!api|_next|_vercel|.*\\..*).*)",
+  // Everything except Next internals, Vercel internals, API files and files with an extension.
+  matcher: "/((?!api|_next|_vercel|files/|.*\\..*).*)",
 }
