@@ -15,6 +15,7 @@ export const DEMO_USER = {
   // Admin sees every nav section; change it to preview the other roles.
   role: "admin" as Role,
   company: {
+    id: "c-nakheel",
     name: "Nakheel Trading",
     timezone: "Asia/Riyadh",
     weekStart: 0 as Weekday,

@@ -34,6 +34,8 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
 import { EmptyState } from "@workspace/ui/components/empty-state"
@@ -44,10 +46,8 @@ import {
   type AccountStatus,
 } from "@workspace/ui/components/status-chip"
 
-import type { Employee } from "./demo-data"
+import type { Department, Employee, PersonOption } from "./employee-data"
 import { EmployeeDrawer } from "./employee-drawer"
-import { queryEmployees } from "./rules"
-import { useEmployeesStore } from "./store"
 
 // Status filters keep their status colours (filters-bar.md).
 const STATUS_TONES: Record<AccountStatus, string> = {
@@ -58,64 +58,62 @@ const STATUS_TONES: Record<AccountStatus, string> = {
 
 const columnHelper = createDataTableColumns<Employee>()
 
-export function EmployeesList() {
+/** The server searches, filters, sorts and pages (GET /employees); the URL holds the query. */
+export function EmployeesList({
+  rows,
+  total,
+  departments,
+  managers,
+}: {
+  rows: Employee[]
+  total: number
+  departments: Department[]
+  managers: PersonOption[]
+}) {
   const t = useTranslations("employees")
   const tAll = useTranslations()
   const format = useFormat()
   const labels = useTableLabels()
-  const { employees, departments } = useEmployeesStore()
-  const table = useTableUrlState({ defaultSort: "name" })
+  const table = useTableUrlState({ defaultSort: "name", shallow: false })
   const [filters, setFilters] = useQueryStates(
     {
-      dept: parseAsArrayOf(parseAsString).withDefault([]),
+      dept: parseAsString,
       status: parseAsArrayOf(
         parseAsStringLiteral(ACCOUNT_STATUSES)
       ).withDefault([]),
     },
-    { history: "replace", clearOnDefault: true }
+    { history: "replace", clearOnDefault: true, shallow: false }
   )
   const [editing, setEditing] = useState<Employee | "new" | null>(null)
 
-  const departmentOptions = [
-    ...departments.map((department) => ({
-      id: department.id,
-      label: department.name,
-    })),
-    { id: "none", label: t("noDepartment") },
-  ]
   const statusLabel = (status: AccountStatus) => tAll(`account.${status}`)
-
-  const { rows, total } = queryEmployees(employees, departments, {
-    search: table.search,
-    departments: filters.dept,
-    statuses: filters.status,
-    sort: table.sort,
-    page: table.page,
-    pageSize: table.pageSize,
-  })
+  const departmentName = departments.find(
+    (department) => department.id === filters.dept
+  )?.name
   const filtersActive =
-    Boolean(table.search) ||
-    filters.dept.length > 0 ||
-    filters.status.length > 0
+    Boolean(table.search) || Boolean(filters.dept) || filters.status.length > 0
 
   function clearAll() {
     table.setSearch("")
     void setFilters({ dept: null, status: null })
   }
 
-  function toggle(key: "dept" | "status", value: string, on: boolean) {
-    const current: string[] = filters[key]
+  // The API filters by one department at a time.
+  function setDepartment(id: string | null) {
+    void setFilters({ dept: id })
+    table.setPage(1)
+  }
+
+  function toggleStatus(status: AccountStatus, on: boolean) {
     void setFilters({
-      [key]: on
-        ? [...current, value]
-        : current.filter((item) => item !== value),
+      status: on
+        ? [...filters.status, status]
+        : filters.status.filter((item) => item !== status),
     })
     table.setPage(1)
   }
 
   const columns = useMemo<DataTableColumn<Employee>[]>(() => {
-    const nameOf = (list: { id: string; name: string }[], id: string | null) =>
-      list.find((item) => item.id === id)?.name
     return [
       columnHelper.accessor("name", {
         header: t("columns.name"),
@@ -143,28 +141,37 @@ export function EmployeesList() {
           )
         },
       }),
-      columnHelper.accessor("departmentId", {
+      columnHelper.accessor((row) => row.department?.name, {
         id: "department",
         header: t("columns.department"),
-        cell: (info) => cellText(nameOf(departments, info.getValue())),
+        enableSorting: false,
+        cell: (info) => cellText(info.getValue()),
       }),
-      columnHelper.accessor("managerId", {
+      columnHelper.accessor((row) => row.manager?.name, {
         id: "manager",
         header: t("columns.manager"),
         enableSorting: false,
-        cell: (info) => cellText(nameOf(employees, info.getValue())),
+        cell: (info) => cellText(info.getValue()),
       }),
       columnHelper.accessor("status", {
         header: t("columns.status"),
+        enableSorting: false,
         cell: (info) => <Status status={info.getValue()} size="sm" />,
       }),
       columnHelper.accessor("joinedOn", {
+        // The API sorts by joiningDate.
+        id: "joiningDate",
         header: t("columns.joined"),
-        cell: (info) => (
-          <span className="tabular whitespace-nowrap">
-            {format.day(info.getValue(), "numeric")}
-          </span>
-        ),
+        cell: (info) => {
+          const day = info.getValue()
+          return day ? (
+            <span className="tabular whitespace-nowrap">
+              {format.day(day, "numeric")}
+            </span>
+          ) : (
+            <NoData />
+          )
+        },
       }),
       columnHelper.display({
         id: "actions",
@@ -200,7 +207,7 @@ export function EmployeesList() {
         },
       }),
     ]
-  }, [t, format, employees, departments])
+  }, [t, format])
 
   return (
     <div className="flex flex-col gap-4">
@@ -237,21 +244,23 @@ export function EmployeesList() {
                 },
               ]
             : []),
-          ...filters.dept.map((id) => {
-            const label =
-              departmentOptions.find((option) => option.id === id)?.label ?? id
-            return {
-              key: `dept-${id}`,
-              label,
-              removeLabel: tAll("filters.remove", { name: label }),
-              onRemove: () => toggle("dept", id, false),
-            }
-          }),
+          ...(filters.dept
+            ? [
+                {
+                  key: "dept",
+                  label: departmentName ?? filters.dept,
+                  removeLabel: tAll("filters.remove", {
+                    name: departmentName ?? filters.dept,
+                  }),
+                  onRemove: () => setDepartment(null),
+                },
+              ]
+            : []),
           ...filters.status.map((status) => ({
             key: status,
             label: statusLabel(status),
             removeLabel: tAll("filters.remove", { name: statusLabel(status) }),
-            onRemove: () => toggle("status", status, false),
+            onRemove: () => toggleStatus(status, false),
             className: STATUS_TONES[status],
           })),
         ]}
@@ -266,20 +275,23 @@ export function EmployeesList() {
           <DropdownMenuTrigger asChild>
             <FilterTrigger
               label={t("columns.department")}
-              count={filters.dept.length}
+              count={filters.dept ? 1 : 0}
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {departmentOptions.map((option) => (
-              <DropdownMenuCheckboxItem
-                key={option.id}
-                checked={filters.dept.includes(option.id)}
-                onCheckedChange={(on) => toggle("dept", option.id, on)}
-                onSelect={(event) => event.preventDefault()}
-              >
-                <bdi>{option.label}</bdi>
-              </DropdownMenuCheckboxItem>
-            ))}
+            <DropdownMenuRadioGroup
+              value={filters.dept ?? ""}
+              onValueChange={(id) => setDepartment(id || null)}
+            >
+              {departments.map((department) => (
+                <DropdownMenuRadioItem
+                  key={department.id}
+                  value={department.id}
+                >
+                  <bdi>{department.name}</bdi>
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
@@ -294,7 +306,7 @@ export function EmployeesList() {
               <DropdownMenuCheckboxItem
                 key={status}
                 checked={filters.status.includes(status)}
-                onCheckedChange={(on) => toggle("status", status, on)}
+                onCheckedChange={(on) => toggleStatus(status, on)}
                 onSelect={(event) => event.preventDefault()}
               >
                 {statusLabel(status)}
@@ -350,6 +362,8 @@ export function EmployeesList() {
           editing === null ? "closed" : editing === "new" ? "new" : editing.id
         }
         editing={editing}
+        departments={departments}
+        managers={managers}
         onClose={() => setEditing(null)}
       />
     </div>

@@ -19,7 +19,7 @@ import {
   TextField,
   useFieldError,
 } from "@/components/form-fields"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Card } from "@workspace/ui/components/card"
@@ -53,14 +53,19 @@ import {
 } from "@workspace/ui/components/icon-picker"
 import { notify } from "@workspace/ui/components/sonner"
 
-import { DEMO_LEAVE_TYPES, type LeaveType } from "./demo-data"
+import { deleteLeaveType, saveLeaveType } from "./actions"
+import type { LeaveType } from "./settings-data"
 
 const LeaveTypeBody = z.object({
-  name: z.string().trim().min(2).max(40),
+  name: z.string().trim().min(1).max(60),
   icon: z.enum(Object.keys(LEAVE_ICONS) as [LeaveIconKey, ...LeaveIconKey[]]),
   paid: z.boolean(),
   tracked: z.boolean(),
-  allowance: z.number().int().min(0, { error: "NEGATIVE_ALLOWANCE" }).max(365),
+  allowance: z
+    .number()
+    .multipleOf(0.5)
+    .min(0, { error: "NEGATIVE_ALLOWANCE" })
+    .max(365),
   allowNegative: z.boolean(),
   halfDays: z.boolean(),
   reasonRequired: z.boolean(),
@@ -79,44 +84,43 @@ const BLANK: LeaveTypeInput = {
   reasonRequired: false,
 }
 
-// ponytail: leave types live in state until BE-08; edits reset on reload.
-export function LeaveTypesPage() {
+/** The API's names for the dialog's fields; also maps field errors back. */
+const API_FIELDS = {
+  name: "name",
+  icon: "icon",
+  paid: "paid",
+  tracked: "tracksBalance",
+  allowance: "defaultAllowanceDays",
+  allowNegative: "allowNegativeBalance",
+  halfDays: "halfDaysAllowed",
+  reasonRequired: "requiresReason",
+} as const satisfies Record<keyof LeaveTypeInput, string>
+
+const FORM_FIELDS = Object.fromEntries(
+  Object.entries(API_FIELDS).map(([form, api]) => [api, form])
+)
+
+export function LeaveTypesPage({ types }: { types: LeaveType[] }) {
   const t = useTranslations("settings.leaveTypes")
-  const [types, setTypes] = useState(DEMO_LEAVE_TYPES)
   const [editing, setEditing] = useState<LeaveType | "new" | null>(null)
   const [removing, setRemoving] = useState<LeaveType | null>(null)
   const active = types.filter((type) => !type.archived)
   const archived = types.filter((type) => type.archived)
 
-  function onSave(body: LeaveTypeInput & { id?: string }) {
-    const existing = types.find((type) => type.id === body.id)
-    const next: LeaveType = {
-      ...(existing ?? {
-        id: crypto.randomUUID(),
-        inUse: false,
-        archived: false,
-      }),
-      ...body,
-      allowance: body.tracked ? body.allowance : 0,
+  async function onRemove(type: LeaveType) {
+    const problem = type.inUse
+      ? await saveLeaveType({ archived: true }, type.id)
+      : await deleteLeaveType(type.id)
+    // Used since the page loaded: it can only be archived now.
+    if (problem?.code === "LEAVE_TYPE_IN_USE") {
+      setRemoving({ ...type, inUse: true })
+      return
     }
-    setTypes((current) =>
-      existing
-        ? current.map((type) => (type.id === next.id ? next : type))
-        : [...current, next]
-    )
-    setEditing(null)
-    notify.success(t(existing ? "updated" : "created", { name: next.name }))
-  }
-
-  function onRemove(type: LeaveType) {
-    setTypes((current) =>
-      type.inUse
-        ? current.map((item) =>
-            item.id === type.id ? { ...item, archived: true } : item
-          )
-        : current.filter((item) => item.id !== type.id)
-    )
-    notify.success(t(type.inUse ? "archived" : "deleted", { name: type.name }))
+    if (problem) notify.error(t("failed"))
+    else
+      notify.success(
+        t(type.inUse ? "archived" : "deleted", { name: type.name })
+      )
   }
 
   return (
@@ -166,7 +170,6 @@ export function LeaveTypesPage() {
         editing={editing}
         types={types}
         onClose={() => setEditing(null)}
-        onSave={onSave}
       />
 
       <ConfirmDialog
@@ -188,7 +191,7 @@ export function LeaveTypesPage() {
           removing?.inUse ? "archiveDialog.confirm" : "deleteDialog.confirm"
         )}
         onConfirm={() => {
-          if (removing) onRemove(removing)
+          if (removing) void onRemove(removing)
         }}
       />
     </div>
@@ -273,12 +276,10 @@ function LeaveTypeDialog({
   editing,
   types,
   onClose,
-  onSave,
 }: {
   editing: LeaveType | "new" | null
   types: LeaveType[]
   onClose: () => void
-  onSave: (body: LeaveTypeInput & { id?: string }) => void
 }) {
   const t = useTranslations("settings.leaveTypes")
   const tCommon = useTranslations("common")
@@ -301,17 +302,30 @@ function LeaveTypeDialog({
       .map((type) => [type.icon, type.name])
   )
 
-  const onSubmit = form.handleSubmit((body) => {
-    const name = body.name.trim().toLowerCase()
-    if (
-      types.some(
-        (type) => type.id !== existing?.id && type.name.toLowerCase() === name
-      )
-    ) {
-      form.setError("name", { message: "NAME_TAKEN" })
+  const onSubmit = form.handleSubmit(async (body) => {
+    const tracked = body.tracked
+    const problem = await saveLeaveType(
+      {
+        name: body.name.trim(),
+        icon: body.icon,
+        paid: body.paid,
+        tracksBalance: tracked,
+        defaultAllowanceDays: tracked ? body.allowance : 0,
+        allowNegativeBalance: tracked && body.allowNegative,
+        halfDaysAllowed: body.halfDays,
+        requiresReason: body.reasonRequired,
+      },
+      existing?.id
+    )
+    if (problem) {
+      showProblem(form, problem, FORM_FIELDS)
+      if (form.formState.errors.root) notify.error(t("failed"))
       return
     }
-    onSave({ ...body, id: existing?.id })
+    onClose()
+    notify.success(
+      t(existing ? "updated" : "created", { name: body.name.trim() })
+    )
   })
 
   return (
@@ -405,7 +419,11 @@ function LeaveTypeDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               {tCommon("cancel")}
             </Button>
-            <Button type="submit" disabled={hasErrors}>
+            <Button
+              type="submit"
+              disabled={hasErrors}
+              loading={form.formState.isSubmitting}
+            >
               {t(existing ? "saveEdit" : "saveNew")}
             </Button>
           </DialogFooter>

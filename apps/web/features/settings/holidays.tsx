@@ -9,19 +9,26 @@ import {
   Trash2Icon,
 } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { parseAsInteger, useQueryState } from "nuqs"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { TextField, useFieldError } from "@/components/form-fields"
-import { DateField } from "@/components/pickers"
+import { DateRangeField } from "@/components/pickers"
+import { addDays } from "@/features/attendance/rules"
+import { useRequestTypeLabel } from "@/features/requests/request-text"
 import { Link } from "@/i18n/navigation"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import { Card } from "@workspace/ui/components/card"
 import { ConfirmDialog } from "@workspace/ui/components/confirm-dialog"
-import type { PlainDate } from "@workspace/ui/components/date-picker"
+import type {
+  DateRangeValue,
+  Holiday,
+  PlainDate,
+} from "@workspace/ui/components/date-picker"
 import {
   Dialog,
   DialogBody,
@@ -57,64 +64,83 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 
-import {
-  DEMO_APPROVED_REQUESTS,
-  DEMO_HOLIDAYS,
-  type ApprovedRequest,
-  type HolidayItem,
-} from "./demo-data"
-import { affectedRequests } from "./rules"
+import { removeHoliday, saveHoliday, type AffectedRequest } from "./actions"
+import type { HolidayItem } from "./settings-data"
 
 const HolidayBody = z.object({
-  date: z.string().min(1),
-  name: z.string().trim().min(2).max(60),
+  dates: z.object(
+    { from: z.string(), to: z.string().nullable() },
+    { error: "REQUIRED" }
+  ),
+  name: z.string().trim().min(1).max(100),
 })
-type HolidayInput = z.infer<typeof HolidayBody>
+type HolidayInput = { dates: DateRangeValue | null; name: string }
 
-const THIS_YEAR = 2026
+/** Each day of each holiday, for the date pickers. */
+export function holidayDays(holidays: HolidayItem[]): Holiday[] {
+  return holidays.flatMap((holiday) => {
+    const days: Holiday[] = []
+    for (
+      let day = holiday.startDate;
+      day <= holiday.endDate;
+      day = addDays(day, 1)
+    )
+      days.push({ date: day, name: holiday.name })
+    return days
+  })
+}
 
-// ponytail: holidays live in state until BE-05; edits reset on reload.
-export function HolidaysPage() {
+export function HolidaysPage({
+  holidays,
+  year,
+  thisYear,
+}: {
+  holidays: HolidayItem[]
+  year: number
+  thisYear: number
+}) {
   const t = useTranslations("settings.holidays")
   const format = useFormat()
-  const [holidays, setHolidays] = useState(DEMO_HOLIDAYS)
-  const [year, setYear] = useState(THIS_YEAR)
+  // The server reads the year, so changing it re-renders the list.
+  const [, setYear] = useQueryState(
+    "year",
+    parseAsInteger.withOptions({ shallow: false, history: "replace" })
+  )
   // null = closed, "new" = add, otherwise the holiday being edited.
   const [editing, setEditing] = useState<HolidayItem | "new" | null>(null)
   const [deleting, setDeleting] = useState<HolidayItem | null>(null)
-  // A saved holiday waiting for the affected-requests confirmation.
-  const [impact, setImpact] = useState<{
-    holiday: HolidayItem
-    requests: ApprovedRequest[]
-  } | null>(null)
+  // Approved requests on a holiday just saved: shown, never changed.
+  const [impact, setImpact] = useState<AffectedRequest[]>([])
 
-  const years = [THIS_YEAR - 1, THIS_YEAR, THIS_YEAR + 1]
-  const shown = holidays
-    .filter((holiday) => holiday.date.startsWith(String(year)))
-    .sort((a, b) => a.date.localeCompare(b.date))
+  const years = [thisYear - 1, thisYear, thisYear + 1]
+  const dates = (holiday: HolidayItem) =>
+    holiday.startDate === holiday.endDate
+      ? format.day(holiday.startDate)
+      : format.dayRange(holiday.startDate, holiday.endDate)
 
-  function commit(holiday: HolidayItem) {
-    const isNew = !holidays.some((item) => item.id === holiday.id)
-    setHolidays((current) => [
-      ...current.filter((item) => item.id !== holiday.id),
-      holiday,
-    ])
-    setYear(Number(holiday.date.slice(0, 4)))
-    notify.success(t(isNew ? "added" : "updated", { name: holiday.name }))
+  function onSaved(holiday: HolidayItem, affected: AffectedRequest[]) {
+    setEditing(null)
+    const startYear = Number(holiday.startDate.slice(0, 4))
+    if (startYear !== year) void setYear(startYear)
+    notify.success(t(editing === "new" ? "added" : "updated", holiday))
+    setImpact(affected)
   }
 
-  function onSave(holiday: HolidayItem) {
-    setEditing(null)
-    const requests = affectedRequests(holiday.date, DEMO_APPROVED_REQUESTS)
-    if (requests.length) setImpact({ holiday, requests })
-    else commit(holiday)
+  async function onDelete(holiday: HolidayItem) {
+    if (await removeHoliday(holiday.id)) notify.error(t("failed"))
+    else notify.success(t("deleted", { name: holiday.name }))
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-h3 font-bold">{t("title")}</h2>
-        <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+        <Select
+          value={String(year)}
+          onValueChange={(value) =>
+            void setYear(Number(value) === thisYear ? null : Number(value))
+          }
+        >
           <SelectTrigger aria-label={t("year")} className="w-28">
             <SelectValue />
           </SelectTrigger>
@@ -136,7 +162,7 @@ export function HolidaysPage() {
       </p>
 
       <Card className="gap-0 overflow-hidden p-0">
-        {shown.length ? (
+        {holidays.length ? (
           <Table>
             <TableCaption className="sr-only">
               {t("caption", { year })}
@@ -151,10 +177,10 @@ export function HolidaysPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shown.map((holiday) => (
+              {holidays.map((holiday) => (
                 <TableRow key={holiday.id} className="group">
                   <TableCell className="tabular whitespace-nowrap">
-                    {format.day(holiday.date)}
+                    {dates(holiday)}
                   </TableCell>
                   <TableCell className="w-full max-w-0 truncate font-medium">
                     <bdi title={holiday.name}>{holiday.name}</bdi>
@@ -205,99 +231,128 @@ export function HolidaysPage() {
         }
         editing={editing}
         holidays={holidays}
-        defaultYear={year}
         onClose={() => setEditing(null)}
-        onSave={onSave}
+        onSaved={onSaved}
       />
 
-      <ConfirmDialog
-        open={impact !== null}
-        onOpenChange={(open) => !open && setImpact(null)}
-        variant="neutral"
-        title={t("impact.title", { count: impact?.requests.length ?? 0 })}
-        description={t("impact.description")}
-        cancelLabel={t("impact.back")}
-        confirmLabel={t("impact.confirm")}
-        impact={
-          impact ? (
-            <ul className="flex flex-col gap-2">
-              {impact.requests.map((request) => (
-                <li key={request.id}>
-                  <Link
-                    href={`/requests/${request.id}`}
-                    className="font-semibold underline underline-offset-4"
-                  >
-                    <bdi>{request.employee}</bdi>
-                  </Link>
-                  <span className="block text-muted-foreground">
-                    <bdi>{request.type}</bdi> ·{" "}
-                    {request.from === request.to
-                      ? format.day(request.from)
-                      : format.dayRange(request.from, request.to)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null
-        }
-        onConfirm={() => {
-          if (impact) commit(impact.holiday)
-        }}
-      />
+      <ImpactDialog requests={impact} onClose={() => setImpact([])} />
 
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
         title={t("deleteDialog.title", { name: deleting?.name ?? "" })}
         description={t("deleteDialog.description", {
-          date: deleting ? format.day(deleting.date) : "",
+          date: deleting ? dates(deleting) : "",
         })}
         cancelLabel={t("deleteDialog.keep")}
         confirmLabel={t("deleteDialog.confirm")}
         onConfirm={() => {
-          if (!deleting) return
-          setHolidays((current) =>
-            current.filter((item) => item.id !== deleting.id)
-          )
-          notify.success(t("deleted", { name: deleting.name }))
+          if (deleting) void onDelete(deleting)
         }}
       />
     </div>
   )
 }
 
+/** The holiday is saved; these approved requests fall on it and stay as they are. */
+function ImpactDialog({
+  requests,
+  onClose,
+}: {
+  requests: AffectedRequest[]
+  onClose: () => void
+}) {
+  const t = useTranslations("settings.holidays.impact")
+  const format = useFormat()
+  const typeLabel = useRequestTypeLabel()
+
+  return (
+    <ConfirmDialog
+      open={requests.length > 0}
+      onOpenChange={(open) => !open && onClose()}
+      variant="neutral"
+      title={t("title", { count: requests.length })}
+      description={t("description")}
+      cancelLabel={t("back")}
+      confirmLabel={t("confirm")}
+      impact={
+        <ul className="flex flex-col gap-2">
+          {requests.map((request) => (
+            <li key={request.requestId}>
+              <Link
+                href={`/requests/${request.requestId}`}
+                className="font-semibold underline underline-offset-4"
+              >
+                <bdi>{request.employeeName}</bdi>
+              </Link>
+              <span className="block text-muted-foreground">
+                <bdi>{typeLabel(request.type)}</bdi> ·{" "}
+                {request.startDate === request.endDate
+                  ? format.day(request.startDate as PlainDate)
+                  : format.dayRange(
+                      request.startDate as PlainDate,
+                      request.endDate as PlainDate
+                    )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      }
+      onConfirm={onClose}
+    />
+  )
+}
+
 function HolidayDialog({
   editing,
   holidays,
-  defaultYear,
   onClose,
-  onSave,
+  onSaved,
 }: {
   editing: HolidayItem | "new" | null
   holidays: HolidayItem[]
-  defaultYear: number
   onClose: () => void
-  onSave: (holiday: HolidayItem) => void
+  onSaved: (holiday: HolidayItem, affected: AffectedRequest[]) => void
 }) {
   const t = useTranslations("settings.holidays")
   const tCommon = useTranslations("common")
   const existing = editing !== null && editing !== "new" ? editing : null
   const form = useForm<HolidayInput>({
-    resolver: zodResolver(HolidayBody, codeErrorMap),
+    resolver: zodResolver(HolidayBody, codeErrorMap) as never,
     mode: "onTouched",
-    defaultValues: existing ?? { date: "", name: "" },
+    defaultValues: existing
+      ? {
+          name: existing.name,
+          dates: { from: existing.startDate, to: existing.endDate },
+        }
+      : { name: "", dates: null },
   })
-  const dateError = useFieldError(form, "date", "holiday-date")
+  const datesError = useFieldError(form, "dates", "holiday-dates")
 
-  const onSubmit = form.handleSubmit((body) => {
-    const taken = holidays.some(
-      (holiday) => holiday.date === body.date && holiday.id !== existing?.id
-    )
-    if (taken) {
-      form.setError("date", { message: "HOLIDAY_EXISTS" })
+  const onSubmit = form.handleSubmit(async ({ name, dates }) => {
+    const body = {
+      name: name.trim(),
+      startDate: dates!.from!,
+      endDate: dates!.to ?? dates!.from!,
+    }
+    const result = await saveHoliday(body, existing?.id)
+    if (result.problem) {
+      showProblem(form, result.problem, {
+        startDate: "dates",
+        endDate: "dates",
+      })
+      if (form.formState.errors.root) notify.error(t("failed"))
       return
     }
-    onSave({ id: existing?.id ?? crypto.randomUUID(), ...body })
+    onSaved(
+      {
+        id: existing?.id ?? "",
+        ...body,
+        startDate: body.startDate as PlainDate,
+        endDate: body.endDate as PlainDate,
+      },
+      result.affected
+    )
   })
 
   return (
@@ -312,18 +367,19 @@ function HolidayDialog({
             <FieldGroup>
               <Controller
                 control={form.control}
-                name="date"
+                name="dates"
                 render={({ field }) => (
-                  <DateField
-                    label={t("date")}
-                    value={(field.value as PlainDate) || null}
+                  <DateRangeField
+                    label={t("dates")}
+                    value={field.value ?? { from: null, to: null }}
                     onChange={(value) => {
-                      field.onChange(value ?? "")
-                      field.onBlur()
+                      field.onChange(value.from ? value : null)
+                      if (value.to) field.onBlur()
                     }}
-                    min={`${defaultYear - 1}-01-01`}
-                    holidays={holidays}
-                    error={dateError?.text}
+                    holidays={holidayDays(
+                      holidays.filter((holiday) => holiday.id !== existing?.id)
+                    )}
+                    error={datesError?.text}
                   />
                 )}
               />
@@ -334,7 +390,7 @@ function HolidayDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               {tCommon("cancel")}
             </Button>
-            <Button type="submit">
+            <Button type="submit" loading={form.formState.isSubmitting}>
               {t(existing ? "saveEdit" : "saveNew")}
             </Button>
           </DialogFooter>

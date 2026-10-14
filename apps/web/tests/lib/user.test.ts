@@ -10,6 +10,7 @@ describe("toUser", () => {
       email: "sara@demo.stampd.app",
       role: "ADMIN",
       company: {
+        id: "c1",
         name: "Nakheel",
         timezone: "Asia/Riyadh",
         weekStart: "SUN",

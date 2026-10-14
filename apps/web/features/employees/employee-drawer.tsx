@@ -6,15 +6,10 @@ import { useId, useState } from "react"
 import { Controller, useForm, type UseFormReturn } from "react-hook-form"
 import { z } from "zod"
 
-import {
-  CheckboxField,
-  SelectField,
-  TextField,
-  useFieldError,
-} from "@/components/form-fields"
+import { SelectField, TextField, useFieldError } from "@/components/form-fields"
 import { DateField } from "@/components/pickers"
 import type { Role } from "@/lib/user"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { Button } from "@workspace/ui/components/button"
 import { ConfirmDialog } from "@workspace/ui/components/confirm-dialog"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
@@ -36,47 +31,71 @@ import {
 } from "@workspace/ui/components/sheet"
 import { notify } from "@workspace/ui/components/sonner"
 
-import type { Employee } from "./demo-data"
-import { change, updateStore, useEmployeesStore } from "./store"
+import { createEmployee, updateEmployee, type EmployeeBody } from "./actions"
+import type { Department, Employee, PersonOption } from "./employee-data"
 
 const ROLES = ["employee", "manager", "admin"] as const satisfies Role[]
 const NONE = "none"
 
-const EmployeeBody = z.object({
-  name: z.string().trim().min(2).max(80),
-  email: z.email(),
-  jobTitle: z.string().trim().min(2).max(80),
-  code: z.string().trim().max(20),
+const EmployeeSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z.email().max(254),
+  jobTitle: z.string().trim().max(100),
+  code: z.string().trim().max(30),
   departmentId: z.string(),
   managerId: z.string(),
   role: z.enum(ROLES),
   joinedOn: z.string().min(1),
-  sendInvite: z.boolean(),
 })
-type EmployeeInput = z.infer<typeof EmployeeBody>
+type EmployeeInput = z.infer<typeof EmployeeSchema>
 
 /** Add (editing = "new") or edit an employee in a drawer (drawer.md: forms on desktop). */
+/** API field names back to form fields, for field errors. */
+const FORM_FIELDS = {
+  employeeCode: "code",
+  joiningDate: "joinedOn",
+}
+
+const toBody = (input: EmployeeInput): EmployeeBody => ({
+  name: input.name.trim(),
+  email: input.email.trim().toLowerCase(),
+  jobTitle: input.jobTitle.trim() || null,
+  employeeCode: input.code.trim() || null,
+  departmentId: input.departmentId === NONE ? null : input.departmentId,
+  managerId: input.managerId === NONE ? null : input.managerId,
+  role: input.role.toUpperCase() as EmployeeBody["role"],
+  joiningDate: input.joinedOn,
+})
+
 export function EmployeeDrawer({
   editing,
+  departments,
+  managers,
   onClose,
 }: {
   editing: Employee | "new" | null
+  departments: Department[]
+  /** Active Managers and Admins. */
+  managers: PersonOption[]
   onClose: () => void
 }) {
   const t = useTranslations("employees.form")
   const tAll = useTranslations()
-  const { employees, departments } = useEmployeesStore()
   const existing = editing !== null && editing !== "new" ? editing : null
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const form = useForm<EmployeeInput>({
-    resolver: zodResolver(EmployeeBody, codeErrorMap),
+    resolver: zodResolver(EmployeeSchema, codeErrorMap),
     mode: "onTouched",
     defaultValues: existing
       ? {
-          ...existing,
-          departmentId: existing.departmentId ?? NONE,
-          managerId: existing.managerId ?? NONE,
-          sendInvite: false,
+          name: existing.name,
+          email: existing.email,
+          jobTitle: existing.jobTitle,
+          code: existing.code,
+          role: existing.role,
+          joinedOn: existing.joinedOn ?? "",
+          departmentId: existing.department?.id ?? NONE,
+          managerId: existing.manager?.id ?? NONE,
         }
       : {
           name: "",
@@ -87,7 +106,6 @@ export function EmployeeDrawer({
           managerId: NONE,
           role: "employee",
           joinedOn: "",
-          sendInvite: true,
         },
   })
   const joinedError = useFieldError(form, "joinedOn", "employee-joined")
@@ -97,82 +115,33 @@ export function EmployeeDrawer({
     else onClose()
   }
 
-  const onSubmit = form.handleSubmit((body) => {
-    const email = body.email.toLowerCase()
-    if (
-      employees.some(
-        (employee) =>
-          employee.id !== existing?.id && employee.email.toLowerCase() === email
-      )
-    ) {
-      form.setError("email", { message: "EMAIL_TAKEN" })
+  const onSubmit = form.handleSubmit(async (input) => {
+    const body = toBody(input)
+    const before = existing
+      ? toBody(form.formState.defaultValues as EmployeeInput)
+      : null
+    // Edits send only what changed (an unchanged role never trips LAST_ADMIN).
+    const change = before
+      ? Object.fromEntries(
+          Object.entries(body).filter(
+            ([key, value]) => before[key as keyof EmployeeBody] !== value
+          )
+        )
+      : body
+    const problem = existing
+      ? await updateEmployee(existing.id, change)
+      : await createEmployee(body)
+    if (problem) {
+      showProblem(form, problem, FORM_FIELDS)
+      if (form.formState.errors.root)
+        notify.error(
+          tAll.has(`employees.errors.${problem.code}` as never)
+            ? tAll(`employees.errors.${problem.code}` as never)
+            : t("failed")
+        )
       return
     }
-    const departmentId = body.departmentId === NONE ? null : body.departmentId
-    const managerId = body.managerId === NONE ? null : body.managerId
-    const next: Employee = {
-      ...(existing ?? {
-        id: crypto.randomUUID(),
-        status: "invited",
-        pendingRequests: 0,
-        upcomingLeaveDays: 0,
-      }),
-      name: body.name.trim(),
-      email,
-      jobTitle: body.jobTitle.trim(),
-      code: body.code.trim(),
-      departmentId,
-      managerId,
-      role: body.role,
-      joinedOn: body.joinedOn as PlainDate,
-    }
-    const nameOf = (id: string | null, list: { id: string; name: string }[]) =>
-      list.find((item) => item.id === id)?.name ?? "–"
-    const fields = existing
-      ? [
-          ["name", existing.name, next.name],
-          ["email", existing.email, next.email],
-          ["jobTitle", existing.jobTitle, next.jobTitle],
-          ["code", existing.code, next.code],
-          [
-            "department",
-            nameOf(existing.departmentId, departments),
-            nameOf(departmentId, departments),
-          ],
-          [
-            "manager",
-            nameOf(existing.managerId, employees),
-            nameOf(managerId, employees),
-          ],
-          ["role", existing.role, next.role],
-          ["joinedOn", existing.joinedOn, next.joinedOn],
-        ]
-          .filter(([, from, to]) => from !== to)
-          .map(([field, from, to]) => ({ field: field!, from: from!, to: to! }))
-      : []
-    updateStore((current) => ({
-      ...current,
-      employees: existing
-        ? current.employees.map((employee) =>
-            employee.id === next.id ? next : employee
-          )
-        : [...current.employees, next],
-      history: [
-        ...current.history,
-        ...(existing && fields.length
-          ? [change(next.id, "updated", fields)]
-          : []),
-        ...(existing ? [] : [change(next.id, "created")]),
-        ...(!existing && body.sendInvite
-          ? [change(next.id, "inviteSent")]
-          : []),
-      ],
-    }))
-    notify.success(
-      t(existing ? "updated" : body.sendInvite ? "invited" : "created", {
-        name: next.name,
-      })
-    )
+    notify.success(t(existing ? "updated" : "invited", { name: body.name }))
     onClose()
   })
 
@@ -229,10 +198,8 @@ export function EmployeeDrawer({
                 <ManagerField
                   form={form}
                   label={t("manager")}
-                  candidates={employees.filter(
-                    (employee) =>
-                      employee.id !== existing?.id &&
-                      employee.status !== "deactivated"
+                  candidates={managers.filter(
+                    (manager) => manager.id !== existing?.id
                   )}
                 />
                 <SelectField
@@ -265,20 +232,13 @@ export function EmployeeDrawer({
                   label={t("code")}
                   description={t("codeHint")}
                 />
-                {existing ? null : (
-                  <CheckboxField
-                    form={form}
-                    name="sendInvite"
-                    label={t("sendInvite")}
-                  />
-                )}
               </FieldGroup>
             </SheetBody>
             <SheetFooter>
               <Button type="button" variant="outline" onClick={close}>
                 {tAll("common.cancel")}
               </Button>
-              <Button type="submit">
+              <Button type="submit" loading={form.formState.isSubmitting}>
                 {t(existing ? "saveEdit" : "saveNew")}
               </Button>
             </SheetFooter>
@@ -307,7 +267,7 @@ function ManagerField({
 }: {
   form: UseFormReturn<EmployeeInput>
   label: string
-  candidates: Employee[]
+  candidates: PersonOption[]
 }) {
   const t = useTranslations("employees.form")
   const id = useId()

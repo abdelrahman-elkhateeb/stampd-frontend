@@ -22,6 +22,13 @@ const CATEGORIES: Record<string, string> = {
 
 export const categoryOf = (type: string) => CATEGORIES[type] ?? ""
 
+/** A request type's name by key, when the type list isn't at hand (falls back to the key). */
+export function useRequestTypeLabel() {
+  const t = useTranslations("requests")
+  return (key: string) =>
+    t.has(`types.${key}.label` as never) ? t(`types.${key}.label` as never) : key
+}
+
 /** Labels and values for requests, translated by key (the API's labels are English only). */
 export function useRequestText({
   types,

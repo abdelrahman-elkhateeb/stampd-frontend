@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  debounce,
   parseAsInteger,
   parseAsString,
   parseAsStringLiteral,
@@ -15,10 +16,12 @@ import type { SortingState } from "@workspace/ui/components/data-table"
  * Page, page size, sort and search for a server-side table, kept in the URL
  * (?page=2&size=25&sort=-joinedOn&q=omar) so a view can be bookmarked and shared.
  * Sort uses the API's convention: field name, "-" prefix for descending.
+ * `shallow: false` re-renders the page on the server when they change (it reads them).
  */
 export function useTableUrlState({
   defaultSort = "",
   defaultSize = 25 as PageSize,
+  shallow = true,
 } = {}) {
   const [state, setState] = useQueryStates(
     {
@@ -29,7 +32,7 @@ export function useTableUrlState({
       sort: parseAsString.withDefault(defaultSort),
       q: parseAsString.withDefault(""),
     },
-    { history: "replace", clearOnDefault: true }
+    { history: "replace", clearOnDefault: true, shallow }
   )
 
   const sorting: SortingState = useMemo(
@@ -62,6 +65,8 @@ export function useTableUrlState({
         page: 1,
       })
     },
-    setSearch: (q: string) => setState({ q, page: 1 }),
+    // Typing doesn't ask the server on every key.
+    setSearch: (q: string) =>
+      setState({ q, page: 1 }, { limitUrlUpdates: debounce(300) }),
   }
 }

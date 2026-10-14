@@ -6,7 +6,6 @@ import {
   BabyIcon,
   BanknoteIcon,
   BriefcaseIcon,
-  CalendarPlusIcon,
   ChevronDownIcon,
   GraduationCapIcon,
   HeartIcon,
@@ -30,18 +29,18 @@ import {
 // A closed, ordered set (decision 21): leave types share --cat-leave and differ by icon.
 
 export const LEAVE_ICONS = {
-  "tree-palm": TreePalmIcon,
-  thermometer: ThermometerIcon,
-  siren: SirenIcon,
-  banknote: BanknoteIcon,
-  landmark: LandmarkIcon,
-  baby: BabyIcon,
-  "calendar-plus": CalendarPlusIcon,
-  heart: HeartIcon,
-  "graduation-cap": GraduationCapIcon,
-  users: UsersIcon,
-  moon: MoonIcon,
-  briefcase: BriefcaseIcon,
+  // Keyed by the API's icon names (BE-08).
+  annual: TreePalmIcon,
+  sick: ThermometerIcon,
+  emergency: SirenIcon,
+  unpaid: BanknoteIcon,
+  hajj: LandmarkIcon,
+  maternity: BabyIcon,
+  paternity: UsersIcon,
+  marriage: HeartIcon,
+  study: GraduationCapIcon,
+  bereavement: MoonIcon,
+  other: BriefcaseIcon,
 } satisfies Record<string, LucideIcon>
 
 export type LeaveIconKey = keyof typeof LEAVE_ICONS

@@ -1,34 +1,7 @@
-import type { PlainDate, Weekday } from "@workspace/ui/components/date-picker"
+import { WEEKDAYS } from "@/lib/user"
+import type { Weekday } from "@workspace/ui/components/date-picker"
 
-import type {
-  ApprovedRequest,
-  CompanySettings,
-  SettingsChange,
-} from "./demo-data"
-
-function luminance(hex: string) {
-  const [r, g, b] = [1, 3, 5].map((at) => {
-    const channel = parseInt(hex.slice(at, at + 2), 16) / 255
-    return channel <= 0.03928
-      ? channel / 12.92
-      : ((channel + 0.055) / 1.055) ** 2.4
-  })
-  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
-}
-
-/** WCAG contrast ratio between two 6-digit hex colours. */
-export function contrast(a: string, b: string) {
-  const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-  return (high! + 0.05) / (low! + 0.05)
-}
-
-/** Themes where the accent ring needs an extra outline (layout.md › Accent validation). */
-export function accentOutline(accent: string) {
-  return {
-    light: contrast(accent, "#FFFDF9") < 3,
-    dark: contrast(accent, "#1F1C17") < 3,
-  }
-}
+import type { CompanySettings } from "./settings-data"
 
 /** "Sun–Thu" for a run of days in week order, otherwise "Sun, Tue, Thu". */
 export function workingDaysSummary(
@@ -50,17 +23,38 @@ export function workingDaysSummary(
     : order.map(name).join(", ")
 }
 
-/** Approved requests that include the day (plain dates compare as strings). */
-export function affectedRequests(day: PlainDate, requests: ApprovedRequest[]) {
-  return requests.filter((request) => request.from <= day && day <= request.to)
-}
+/** What the company form edits, in app form. */
+export type CompanyValues = Pick<
+  CompanySettings,
+  | "name"
+  | "timezone"
+  | "workingDays"
+  | "workStart"
+  | "workEnd"
+  | "graceMinutes"
+  | "leaveYearStartMonth"
+>
 
-/** The fields that changed, for the settings history (BE-04 records this server-side). */
-export function settingsDiff(
-  before: CompanySettings,
-  after: CompanySettings
-): SettingsChange["fields"] {
-  return (Object.keys(after) as (keyof CompanySettings)[])
-    .filter((field) => String(before[field]) !== String(after[field]))
-    .map((field) => ({ field, from: before[field], to: after[field] }))
+/** API names for the form's fields; also maps field errors back. */
+export const SETTINGS_FIELDS = {
+  name: "name",
+  timezone: "timezone",
+  workingDays: "workingDays",
+  workStart: "workStartTime",
+  workEnd: "workEndTime",
+  graceMinutes: "lateGraceMinutes",
+  leaveYearStartMonth: "leaveYearStartMonth",
+} as const satisfies Record<keyof CompanyValues, string>
+
+/** The PATCH /company/settings body: only the fields that changed, in API form. */
+export function settingsChange(before: CompanyValues, after: CompanyValues) {
+  const body: Record<string, unknown> = {}
+  for (const field of Object.keys(SETTINGS_FIELDS) as (keyof CompanyValues)[]) {
+    if (String(before[field]) === String(after[field])) continue
+    body[SETTINGS_FIELDS[field]] =
+      field === "workingDays"
+        ? [...after.workingDays].sort().map((day) => WEEKDAYS[day])
+        : after[field]
+  }
+  return body
 }

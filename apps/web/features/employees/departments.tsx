@@ -15,7 +15,7 @@ import { z } from "zod"
 
 import { TextField } from "@/components/form-fields"
 import { Link } from "@/i18n/navigation"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import { Card } from "@workspace/ui/components/card"
@@ -48,24 +48,33 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 
-import type { Department } from "./demo-data"
-import { updateStore, useEmployeesStore } from "./store"
+import { deleteDepartment, saveDepartment } from "./actions"
+import type { Department } from "./employee-data"
 
-const DepartmentBody = z.object({ name: z.string().trim().min(2).max(60) })
+const DepartmentBody = z.object({ name: z.string().trim().min(1).max(80) })
 type DepartmentInput = z.infer<typeof DepartmentBody>
 
-export function DepartmentsPage() {
+export function DepartmentsPage({
+  departments,
+}: {
+  departments: Department[]
+}) {
   const t = useTranslations("employees.departments")
   const format = useFormat()
-  const { departments, employees } = useEmployeesStore()
   const [editing, setEditing] = useState<Department | "new" | null>(null)
   const [deleting, setDeleting] = useState<Department | null>(null)
-  const headcount = (id: string) =>
-    employees.filter(
-      (employee) =>
-        employee.departmentId === id && employee.status !== "deactivated"
-    ).length
   const sorted = [...departments].sort((a, b) => a.name.localeCompare(b.name))
+
+  async function onDelete(department: Department) {
+    const problem = await deleteDepartment(department.id)
+    if (problem)
+      notify.error(
+        t(problem.code === "DEPARTMENT_NOT_EMPTY" ? "notEmpty" : "failed", {
+          name: department.name,
+        })
+      )
+    else notify.success(t("deleted", { name: department.name }))
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -102,7 +111,7 @@ export function DepartmentsPage() {
                     </Link>
                   </TableCell>
                   <TableCell className="tabular text-end">
-                    {format.number(headcount(department.id))}
+                    {format.number(department.employeeCount)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -153,7 +162,6 @@ export function DepartmentsPage() {
           editing === null ? "closed" : editing === "new" ? "new" : editing.id
         }
         editing={editing}
-        departments={departments}
         onClose={() => setEditing(null)}
       />
 
@@ -162,24 +170,12 @@ export function DepartmentsPage() {
         onOpenChange={(open) => !open && setDeleting(null)}
         title={t("deleteDialog.title", { name: deleting?.name ?? "" })}
         description={t("deleteDialog.description", {
-          count: deleting ? headcount(deleting.id) : 0,
+          count: deleting?.employeeCount ?? 0,
         })}
         cancelLabel={t("deleteDialog.keep")}
         confirmLabel={t("deleteDialog.confirm")}
         onConfirm={() => {
-          if (!deleting) return
-          updateStore((current) => ({
-            ...current,
-            departments: current.departments.filter(
-              (item) => item.id !== deleting.id
-            ),
-            employees: current.employees.map((employee) =>
-              employee.departmentId === deleting.id
-                ? { ...employee, departmentId: null }
-                : employee
-            ),
-          }))
-          notify.success(t("deleted", { name: deleting.name }))
+          if (deleting) void onDelete(deleting)
         }}
       />
     </div>
@@ -188,11 +184,9 @@ export function DepartmentsPage() {
 
 function DepartmentDialog({
   editing,
-  departments,
   onClose,
 }: {
   editing: Department | "new" | null
-  departments: Department[]
   onClose: () => void
 }) {
   const t = useTranslations("employees.departments")
@@ -204,26 +198,15 @@ function DepartmentDialog({
     defaultValues: { name: existing?.name ?? "" },
   })
 
-  const onSubmit = form.handleSubmit(({ name }) => {
+  const onSubmit = form.handleSubmit(async ({ name }) => {
     const trimmed = name.trim()
-    if (
-      departments.some(
-        (item) =>
-          item.id !== existing?.id &&
-          item.name.toLowerCase() === trimmed.toLowerCase()
-      )
-    ) {
-      form.setError("name", { message: "DEPARTMENT_TAKEN" })
+    const problem = await saveDepartment(trimmed, existing?.id)
+    if (problem) {
+      // A taken name comes back as 409 ALREADY_EXISTS on `name`.
+      showProblem(form, problem)
+      if (form.formState.errors.root) notify.error(t("failed"))
       return
     }
-    updateStore((current) => ({
-      ...current,
-      departments: existing
-        ? current.departments.map((item) =>
-            item.id === existing.id ? { ...item, name: trimmed } : item
-          )
-        : [...current.departments, { id: crypto.randomUUID(), name: trimmed }],
-    }))
     notify.success(t(existing ? "renamed" : "added", { name: trimmed }))
     onClose()
   })
@@ -247,7 +230,7 @@ function DepartmentDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               {tCommon("cancel")}
             </Button>
-            <Button type="submit">
+            <Button type="submit" loading={form.formState.isSubmitting}>
               {t(existing ? "saveRename" : "saveNew")}
             </Button>
           </DialogFooter>

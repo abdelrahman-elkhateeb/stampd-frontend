@@ -9,6 +9,7 @@ export type User = {
   email: string
   role: Role
   company: {
+    id: string
     name: string
     timezone: string
     weekStart: Weekday
@@ -23,6 +24,7 @@ export type MeResponse = {
   email: string
   role: "EMPLOYEE" | "MANAGER" | "ADMIN"
   company: {
+    id: string
     name: string
     timezone: string
     weekStart: string
@@ -43,6 +45,7 @@ export function toUser(me: MeResponse): User {
     email: me.email,
     role: toRole(me.role),
     company: {
+      id: me.company.id,
       name: me.company.name,
       timezone: me.company.timezone,
       weekStart: toWeekday(me.company.weekStart),

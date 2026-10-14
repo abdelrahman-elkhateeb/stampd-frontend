@@ -10,20 +10,20 @@ import {
   UserCheckIcon,
   UserXIcon,
 } from "lucide-react"
-import { useLocale, useTranslations } from "next-intl"
-import { notFound } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useTranslations } from "next-intl"
+import { useEffect, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 import { ReasonField, StepperField } from "@/components/form-fields"
+import { DateField } from "@/components/pickers"
 import { Status } from "@/components/status"
-import { DEMO_LEAVE_TYPES } from "@/features/settings/demo-data"
-import { getIntlLocale } from "@/i18n/locale"
+import { useUser } from "@/components/user-provider"
+import { companyDate } from "@/features/attendance/rules"
+import { useRequestTypeLabel } from "@/features/requests/request-text"
+import { useCalendarNames } from "@/features/settings/company-settings"
 import { Link } from "@/i18n/navigation"
-import type { Locale } from "@/i18n/routing"
-import { DEMO_USER } from "@/lib/demo-user"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { useFormat } from "@/lib/use-format"
 import { PersonAvatar } from "@workspace/ui/components/avatar"
 import { Button } from "@workspace/ui/components/button"
@@ -34,6 +34,7 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card"
 import { ConfirmDialog } from "@workspace/ui/components/confirm-dialog"
+import type { PlainDate } from "@workspace/ui/components/date-picker"
 import {
   Dialog,
   DialogBody,
@@ -77,48 +78,52 @@ import {
 import { ChangesTimeline } from "@workspace/ui/components/timeline"
 import { cn } from "@workspace/ui/lib/utils"
 
-import type { Employee, EmployeeChange, LedgerEntry } from "./demo-data"
+import {
+  adjustBalance,
+  deactivate,
+  previewDeactivation,
+  reactivate,
+  resendInvite,
+  type DeactivationImpact,
+} from "./actions"
+import type {
+  Balance,
+  Department,
+  Employee,
+  EmployeeChange,
+  LedgerEntry,
+  PersonOption,
+} from "./employee-data"
 import { EmployeeDrawer } from "./employee-drawer"
 import { NoData } from "./employees-list"
-import { directReports, ledgerRows } from "./rules"
-import { change, updateStore, useEmployeesStore } from "./store"
+import { ledgerRows } from "./rules"
 
-const TRACKED = DEMO_LEAVE_TYPES.filter(
-  (type) => type.tracked && !type.archived
-)
-const YEAR = 2026
-
-export function EmployeeDetail({ id }: { id: string }) {
+export function EmployeeDetail({
+  employee,
+  balances,
+  ledgers,
+  history,
+  departments,
+  managers,
+}: {
+  employee: Employee
+  balances: Balance[]
+  /** Each tracked type's ledger, by leave type id. */
+  ledgers: Record<string, LedgerEntry[]>
+  history: EmployeeChange[]
+  departments: Department[]
+  managers: PersonOption[]
+}) {
   const t = useTranslations("employees")
   const format = useFormat()
-  const store = useEmployeesStore()
-  const employee = store.employees.find((item) => item.id === id)
+  const me = useUser()
   const [editing, setEditing] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
-  if (!employee) notFound()
+  const isMe = employee.id === me.id
 
-  const department = store.departments.find(
-    (item) => item.id === employee.departmentId
-  )
-  const manager = store.employees.find((item) => item.id === employee.managerId)
-  const isMe = employee.id === DEMO_USER.id
-
-  function setStatus(
-    status: Employee["status"],
-    action: EmployeeChange["action"]
-  ) {
-    updateStore((current) => ({
-      ...current,
-      employees: current.employees.map((item) =>
-        item.id === id ? { ...item, status } : item
-      ),
-      history: [
-        ...current.history,
-        change(id, action, [
-          { field: "status", from: employee!.status, to: status },
-        ]),
-      ],
-    }))
+  async function run(action: Promise<unknown>, done: string) {
+    if (await action) notify.error(t("detail.failed"))
+    else notify.success(done)
   }
 
   return (
@@ -132,7 +137,12 @@ export function EmployeeDetail({ id }: { id: string }) {
       </Link>
 
       <div className="flex flex-wrap items-center gap-4">
-        <PersonAvatar name={employee.name} userId={employee.id} size={56} />
+        <PersonAvatar
+          name={employee.name}
+          userId={employee.id}
+          src={employee.photoUrl ?? undefined}
+          size={56}
+        />
         <div className="flex min-w-48 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-h2 font-bold">
@@ -142,10 +152,10 @@ export function EmployeeDetail({ id }: { id: string }) {
           </div>
           <p className="text-muted-foreground">
             <bdi>{employee.jobTitle}</bdi>
-            {department ? (
+            {employee.department ? (
               <>
-                {" · "}
-                <bdi>{department.name}</bdi>
+                {employee.jobTitle ? " · " : null}
+                <bdi>{employee.department.name}</bdi>
               </>
             ) : null}
           </p>
@@ -170,15 +180,12 @@ export function EmployeeDetail({ id }: { id: string }) {
               <DropdownMenuContent align="end">
                 {employee.status === "invited" ? (
                   <DropdownMenuItem
-                    onSelect={() => {
-                      updateStore((current) => ({
-                        ...current,
-                        history: [...current.history, change(id, "inviteSent")],
-                      }))
-                      notify.success(
+                    onSelect={() =>
+                      void run(
+                        resendInvite(employee.id),
                         t("detail.inviteResent", { email: employee.email })
                       )
-                    }}
+                    }
                   >
                     <MailIcon aria-hidden />
                     {t("detail.resendInvite")}
@@ -186,12 +193,12 @@ export function EmployeeDetail({ id }: { id: string }) {
                 ) : null}
                 {employee.status === "deactivated" ? (
                   <DropdownMenuItem
-                    onSelect={() => {
-                      setStatus("active", "reactivated")
-                      notify.success(
+                    onSelect={() =>
+                      void run(
+                        reactivate(employee.id),
                         t("detail.reactivated", { name: employee.name })
                       )
-                    }}
+                    }
                   >
                     <UserCheckIcon aria-hidden />
                     {t("detail.reactivate")}
@@ -225,31 +232,46 @@ export function EmployeeDetail({ id }: { id: string }) {
                     {employee.email}
                   </bdi>,
                 ],
-                ["code", employee.code || <NoData key="v" />],
+                ["employeeCode", employee.code || <NoData key="v" />],
                 [
-                  "department",
-                  department ? (
-                    <bdi key="v">{department.name}</bdi>
+                  "departmentId",
+                  employee.department ? (
+                    <bdi key="v">{employee.department.name}</bdi>
                   ) : (
                     <NoData key="v" />
                   ),
                 ],
                 [
-                  "manager",
-                  manager ? (
+                  "managerId",
+                  employee.manager ? (
                     <Link
                       key="v"
-                      href={`/employees/${manager.id}`}
+                      href={`/employees/${employee.manager.id}`}
                       className="font-semibold underline underline-offset-4"
                     >
-                      <bdi>{manager.name}</bdi>
+                      <bdi>{employee.manager.name}</bdi>
                     </Link>
                   ) : (
                     <NoData key="v" />
                   ),
                 ],
                 ["role", t(`roles.${employee.role}`)],
-                ["joinedOn", format.day(employee.joinedOn, "long")],
+                [
+                  "joiningDate",
+                  employee.joinedOn ? (
+                    format.day(employee.joinedOn, "long")
+                  ) : (
+                    <NoData key="v" />
+                  ),
+                ],
+                ...(employee.lastWorkingDay
+                  ? ([
+                      [
+                        "lastWorkingDay",
+                        format.day(employee.lastWorkingDay, "long"),
+                      ],
+                    ] as const)
+                  : []),
               ] as const
             ).map(([key, value]) => (
               <div key={key} className="contents">
@@ -264,28 +286,28 @@ export function EmployeeDetail({ id }: { id: string }) {
 
         <BalancesCard
           employee={employee}
-          entries={store.ledger.filter((entry) => entry.employeeId === id)}
+          balances={balances.filter((balance) => balance.tracked)}
+          ledgers={ledgers}
         />
       </div>
 
       <HistoryCard
-        history={store.history
-          .filter((entry) => entry.employeeId === id)
-          .reverse()}
+        history={history}
+        departments={departments}
+        managers={managers}
       />
 
       <EmployeeDrawer
         key={editing ? "open" : "closed"}
         editing={editing ? employee : null}
+        departments={departments}
+        managers={managers}
         onClose={() => setEditing(false)}
       />
       {deactivating ? (
         <DeactivateDialog
           employee={employee}
-          reports={directReports(employee, store.employees)}
-          candidates={store.employees.filter(
-            (item) => item.id !== id && item.status === "active"
-          )}
+          candidates={managers.filter((item) => item.id !== employee.id)}
           onClose={() => setDeactivating(false)}
         />
       ) : null}
@@ -294,23 +316,41 @@ export function EmployeeDetail({ id }: { id: string }) {
 }
 
 /**
- * Type-to-confirm with the impact (patterns/destructive-confirm.md): pending requests and
- * future leave are cancelled; direct reports move to one new manager before it goes through.
+ * Type-to-confirm with the impact (patterns/destructive-confirm.md). The server previews what the
+ * chosen last working day does; direct reports move to one new manager before it goes through.
  */
 function DeactivateDialog({
   employee,
-  reports,
   candidates,
   onClose,
 }: {
   employee: Employee
-  reports: Employee[]
-  candidates: Employee[]
+  candidates: PersonOption[]
   onClose: () => void
 }) {
   const t = useTranslations("employees.deactivate")
+  const typeLabel = useRequestTypeLabel()
+  const { timezone } = useUser().company
+  const [lastDay, setLastDay] = useState<PlainDate>(() =>
+    companyDate(new Date(), timezone)
+  )
+  const [impact, setImpact] = useState<DeactivationImpact | null>(null)
   const [newManager, setNewManager] = useState<string>()
-  const newManagerName = candidates.find((c) => c.id === newManager)?.name
+
+  useEffect(() => {
+    let current = true
+    void previewDeactivation(employee.id, lastDay).then((result) => {
+      if (current) setImpact(result.impact ?? null)
+    })
+    return () => {
+      current = false
+    }
+  }, [employee.id, lastDay])
+
+  const reports = impact?.directReports ?? []
+  const reportIds = new Set(reports.map((report) => report.id))
+  const types = (items: { type: string }[]) =>
+    [...new Set(items.map((item) => typeLabel(item.type)))].join(", ")
 
   return (
     <ConfirmDialog
@@ -329,11 +369,28 @@ function DeactivateDialog({
       errorMessage={t("reassignFirst")}
       impact={
         <div className="flex flex-col gap-3">
-          <ul className="flex list-disc flex-col gap-1 ps-5">
-            <li>{t("pending", { count: employee.pendingRequests })}</li>
-            <li>{t("upcoming", { count: employee.upcomingLeaveDays })}</li>
-            <li>{t("reports", { count: reports.length })}</li>
-          </ul>
+          <DateField
+            label={t("lastDay")}
+            description={t("lastDayHint")}
+            value={lastDay}
+            onChange={(value) => value && setLastDay(value)}
+          />
+          {impact ? (
+            <ul className="flex list-disc flex-col gap-1 ps-5">
+              <li>
+                {t("pending", { count: impact.pendingRequests.length })}
+                {impact.pendingRequests.length
+                  ? ` (${types(impact.pendingRequests)})`
+                  : null}
+              </li>
+              <li>
+                {t("upcoming", { count: impact.futureApprovedTimeOff.length })}
+              </li>
+              <li>{t("reports", { count: reports.length })}</li>
+            </ul>
+          ) : (
+            <p className="text-muted-foreground">{t("checking")}</p>
+          )}
           {reports.length ? (
             <div className="flex flex-col gap-1">
               <span id="reassign-label" className="font-semibold">
@@ -349,7 +406,7 @@ function DeactivateDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {candidates
-                    .filter((candidate) => !reports.includes(candidate))
+                    .filter((candidate) => !reportIds.has(candidate.id))
                     .map((candidate) => (
                       <SelectItem key={candidate.id} value={candidate.id}>
                         {candidate.name}
@@ -361,35 +418,18 @@ function DeactivateDialog({
           ) : null}
         </div>
       }
-      onConfirm={() => {
+      onConfirm={async () => {
         // The button stays enabled; the section error explains what's missing.
-        if (reports.length && !newManager) throw new Error("reassign")
-        updateStore((current) => ({
-          ...current,
-          employees: current.employees.map((item) =>
-            item.id === employee.id
-              ? {
-                  ...item,
-                  status: "deactivated",
-                  pendingRequests: 0,
-                  upcomingLeaveDays: 0,
-                }
-              : reports.includes(item)
-                ? { ...item, managerId: newManager! }
-                : item
-          ),
-          history: [
-            ...current.history,
-            change(employee.id, "deactivated", [
-              { field: "status", from: employee.status, to: "deactivated" },
-            ]),
-            ...reports.map((report) =>
-              change(report.id, "updated", [
-                { field: "manager", from: employee.name, to: newManagerName! },
-              ])
-            ),
-          ],
-        }))
+        if (!impact || (reports.length && !newManager))
+          throw new Error("reassign")
+        const problem = await deactivate(employee.id, {
+          lastWorkingDay: lastDay,
+          ...(reports.length && { reassignReportsTo: newManager }),
+        })
+        if (problem) {
+          notify.error(t("failed"))
+          throw new Error(problem.code)
+        }
         notify.success(t("done", { name: employee.name }))
       }}
     />
@@ -398,60 +438,69 @@ function DeactivateDialog({
 
 function BalancesCard({
   employee,
-  entries,
+  balances,
+  ledgers,
 }: {
   employee: Employee
-  entries: LedgerEntry[]
+  balances: Balance[]
+  ledgers: Record<string, LedgerEntry[]>
 }) {
   const t = useTranslations("employees.balances")
-  const [adjusting, setAdjusting] = useState<string | null>(null)
+  const [adjusting, setAdjusting] = useState<Balance | null>(null)
+  const year = balances[0]?.year
 
   return (
     <Card aria-labelledby="balances-title" className="min-w-0">
       <CardHeader>
         <CardTitle id="balances-title">{t("title")}</CardTitle>
-        <CardDescription>{t("description", { year: YEAR })}</CardDescription>
+        <CardDescription>
+          {t("description", { year: year ?? "" })}
+        </CardDescription>
       </CardHeader>
-      <Tabs defaultValue={TRACKED[0]!.id}>
-        <TabsList>
-          {TRACKED.map((type) => (
-            <TabsTrigger key={type.id} value={type.id}>
-              <bdi>{type.name}</bdi>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {TRACKED.map((type) => (
-          <TabsContent
-            key={type.id}
-            value={type.id}
-            className="flex flex-col gap-3"
-          >
-            <Ledger
-              leaveTypeName={type.name}
-              entries={entries.filter((entry) => entry.leaveTypeId === type.id)}
-            />
-            {employee.status === "deactivated" ? null : (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-fit"
-                onClick={() => setAdjusting(type.id)}
+      {balances.length ? (
+        <Tabs defaultValue={balances[0]!.leaveType.id}>
+          <TabsList>
+            {balances.map((balance) => (
+              <TabsTrigger
+                key={balance.leaveType.id}
+                value={balance.leaveType.id}
               >
-                <SlidersHorizontalIcon aria-hidden />
-                {t("adjust")}
-              </Button>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+                <bdi>{balance.leaveType.name}</bdi>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {balances.map((balance) => (
+            <TabsContent
+              key={balance.leaveType.id}
+              value={balance.leaveType.id}
+              className="flex flex-col gap-3"
+            >
+              <Ledger
+                leaveTypeName={balance.leaveType.name}
+                year={balance.year}
+                entries={ledgers[balance.leaveType.id] ?? []}
+              />
+              {employee.status === "deactivated" ? null : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setAdjusting(balance)}
+                >
+                  <SlidersHorizontalIcon aria-hidden />
+                  {t("adjust")}
+                </Button>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      ) : (
+        <p className="py-6 text-center text-muted-foreground">{t("empty")}</p>
+      )}
       <AdjustDialog
-        key={adjusting ?? "closed"}
+        key={adjusting?.leaveType.id ?? "closed"}
         employee={employee}
-        leaveTypeId={adjusting}
-        available={
-          ledgerRows(entries.filter((entry) => entry.leaveTypeId === adjusting))
-            .available
-        }
+        balance={adjusting}
         onClose={() => setAdjusting(null)}
       />
     </Card>
@@ -470,13 +519,16 @@ const ENTRY_TONE: Record<LedgerEntry["type"], (amount: number) => string> = {
 // docs/design-system/components/ledger-table.md
 function Ledger({
   leaveTypeName,
+  year,
   entries,
 }: {
   leaveTypeName: string
+  year: number
   entries: LedgerEntry[]
 }) {
   const t = useTranslations("employees.balances")
   const format = useFormat()
+  const { timezone } = useUser().company
   const { rows, available } = ledgerRows(entries)
   const signed = (amount: number) =>
     `${amount > 0 ? "+" : "−"}${format.number(Math.abs(amount))}`
@@ -490,7 +542,7 @@ function Ledger({
     <div className="overflow-hidden rounded-lg border border-border">
       <Table>
         <TableCaption className="sr-only">
-          {t("caption", { type: leaveTypeName, year: YEAR })}
+          {t("caption", { type: leaveTypeName, year })}
         </TableCaption>
         <TableHeader>
           <TableRow>
@@ -505,20 +557,25 @@ function Ledger({
           {rows.map((entry) => {
             const pending = entry.type === "reservation"
             const details = entry.reason
-              ? `${entry.reason} · ${entry.actor}`
-              : entry.details
+              ? [entry.reason, entry.actor].filter(Boolean).join(" · ")
+              : entry.requestId
+                ? t("fromRequest")
+                : ""
             return (
               <TableRow key={entry.id}>
                 <TableCell className="tabular whitespace-nowrap">
-                  {format.day(entry.date, "numeric")}
+                  {format.day(
+                    companyDate(new Date(entry.at), timezone),
+                    "numeric"
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {t(`types.${entry.type}`)}
                 </TableCell>
                 <TableCell className="max-w-48 truncate" title={details}>
-                  {entry.href ? (
+                  {entry.requestId ? (
                     <Link
-                      href={entry.href}
+                      href={`/requests/${entry.requestId}`}
                       className="underline underline-offset-4"
                     >
                       <bdi>{details}</bdi>
@@ -570,7 +627,7 @@ function Ledger({
 const AdjustBody = z.object({
   amount: z
     .number({ error: "REQUIRED" })
-    .int()
+    .multipleOf(0.5)
     .min(-365)
     .max(365)
     .refine((value) => value !== 0, { error: "ZERO_ADJUSTMENT" }),
@@ -580,19 +637,16 @@ type AdjustInput = z.input<typeof AdjustBody>
 
 function AdjustDialog({
   employee,
-  leaveTypeId,
-  available,
+  balance,
   onClose,
 }: {
   employee: Employee
-  leaveTypeId: string | null
-  available: number
+  balance: Balance | null
   onClose: () => void
 }) {
   const t = useTranslations("employees.balances")
   const tCommon = useTranslations("common")
   const format = useFormat()
-  const type = TRACKED.find((item) => item.id === leaveTypeId)
   const form = useForm<AdjustInput>({
     resolver: zodResolver(AdjustBody, codeErrorMap),
     mode: "onTouched",
@@ -600,55 +654,32 @@ function AdjustDialog({
     defaultValues: { amount: 0, reason: "" },
   })
   const amount = useWatch({ control: form.control, name: "amount" }) ?? 0
+  const available = balance?.available ?? 0
 
-  const onSubmit = form.handleSubmit(({ amount, reason }) => {
-    if (!type) return
-    const entry: LedgerEntry = {
-      id: crypto.randomUUID(),
-      employeeId: employee.id,
-      leaveTypeId: type.id,
-      date: new Intl.DateTimeFormat("en-CA", {
-        timeZone: DEMO_USER.company.timezone,
-      }).format(new Date()) as LedgerEntry["date"],
-      type: "adjustment",
-      details: reason.trim(),
-      amount,
-      actor: DEMO_USER.name,
+  const onSubmit = form.handleSubmit(async ({ amount, reason }) => {
+    if (!balance) return
+    const problem = await adjustBalance(employee.id, balance.leaveType.id, {
+      days: amount,
       reason: reason.trim(),
+    })
+    if (problem) {
+      showProblem(form, problem, { days: "amount" })
+      if (form.formState.errors.root) notify.error(t("failed"))
+      return
     }
-    updateStore((current) => ({
-      ...current,
-      ledger: [...current.ledger, entry],
-      history: [
-        ...current.history,
-        change(
-          employee.id,
-          "balanceAdjusted",
-          [
-            {
-              field: type.name,
-              from: String(available),
-              to: String(available + amount),
-            },
-          ],
-          reason.trim()
-        ),
-      ],
-    }))
-    notify.success(t("adjusted", { type: type.name, name: employee.name }))
+    notify.success(
+      t("adjusted", { type: balance.leaveType.name, name: employee.name })
+    )
     onClose()
   })
 
   return (
-    <Dialog
-      open={type !== undefined}
-      onOpenChange={(open) => !open && onClose()}
-    >
+    <Dialog open={balance !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="sm" closeLabel={tCommon("close")}>
         <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
           <DialogHeader>
             <DialogTitle>
-              {t("adjustTitle", { type: type?.name ?? "" })}
+              {t("adjustTitle", { type: balance?.leaveType.name ?? "" })}
             </DialogTitle>
             <DialogDescription>
               {t("adjustDescription", { name: employee.name })}
@@ -656,10 +687,10 @@ function AdjustDialog({
           </DialogHeader>
           <DialogBody>
             <FieldGroup>
-              {type ? (
+              {balance ? (
                 <p className="flex items-center gap-2 text-body-sm">
                   <LeaveIcon
-                    icon={type.icon}
+                    icon={balance.leaveType.icon}
                     className="size-8 [&_svg]:size-4"
                   />
                   {t("preview", {
@@ -689,7 +720,9 @@ function AdjustDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               {tCommon("cancel")}
             </Button>
-            <Button type="submit">{t("save")}</Button>
+            <Button type="submit" loading={form.formState.isSubmitting}>
+              {t("save")}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -697,27 +730,36 @@ function AdjustDialog({
   )
 }
 
-function HistoryCard({ history }: { history: EmployeeChange[] }) {
+function HistoryCard({
+  history,
+  departments,
+  managers,
+}: {
+  history: EmployeeChange[]
+  departments: Department[]
+  managers: PersonOption[]
+}) {
   const t = useTranslations("employees.history")
   const tAll = useTranslations()
-  const locale = useLocale() as Locale
-  const dateTime = useMemo(
-    () =>
-      new Intl.DateTimeFormat(getIntlLocale(locale), {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone: DEMO_USER.company.timezone,
-      }),
-    [locale]
-  )
-  const value = (field: string, raw: string) =>
-    field === "role"
-      ? tAll(`employees.roles.${raw as Employee["role"]}`)
-      : field === "status"
-        ? tAll(`account.${raw as Employee["status"]}`)
-        : raw
-  const fieldLabel = (field: string) =>
-    t.has(`fields.${field}` as never) ? t(`fields.${field}` as never) : field
+  const format = useFormat()
+  const names = useCalendarNames()
+  const known = (key: string) => t.has(key as never)
+
+  const value = (field: string, raw: unknown) => {
+    if (raw === null || raw === undefined || raw === "") return "—"
+    const text = String(raw)
+    if (field === "role")
+      return tAll(`employees.roles.${text.toLowerCase()}` as never)
+    if (field === "status")
+      return tAll(`account.${text.toLowerCase()}` as never)
+    if (field === "departmentId")
+      return departments.find((item) => item.id === text)?.name ?? "—"
+    if (field === "managerId")
+      return managers.find((item) => item.id === text)?.name ?? "—"
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return format.day(text as PlainDate)
+    if (typeof raw === "boolean") return tAll(raw ? "common.yes" : "common.no")
+    return text
+  }
 
   return (
     <Card aria-labelledby="history-title">
@@ -725,29 +767,40 @@ function HistoryCard({ history }: { history: EmployeeChange[] }) {
         <CardTitle id="history-title">{t("title")}</CardTitle>
         <CardDescription>{t("description")}</CardDescription>
       </CardHeader>
-      <ChangesTimeline
-        label={t("title")}
-        labels={{
-          was: t("was"),
-          now: t("now"),
-          changedTo: t("changedTo"),
-          showAll: (count) => t("showAll", { count }),
-        }}
-        events={history.map((entry) => ({
-          id: entry.id,
-          action: t(`actions.${entry.action}`),
-          actor: entry.actor,
-          at: dateTime.format(new Date(entry.at)),
-          dateTime: entry.at,
-          source: t(entry.action === "imported" ? "system" : "manual"),
-          fields: entry.fields.map((field) => ({
-            label: fieldLabel(field.field),
-            from: value(field.field, field.from),
-            to: value(field.field, field.to),
-          })),
-          reason: entry.reason,
-        }))}
-      />
+      {history.length ? (
+        <ChangesTimeline
+          label={t("title")}
+          labels={{
+            was: t("was"),
+            now: t("now"),
+            changedTo: t("changedTo"),
+            showAll: (count) => t("showAll", { count }),
+          }}
+          events={history.map((entry) => ({
+            id: entry.id,
+            // Dynamic keys: an unknown action or field shows as the API sent it.
+            action: known(`actions.${entry.action}`)
+              ? t(`actions.${entry.action}` as never)
+              : entry.action,
+            actor: entry.actor ?? t("system"),
+            at: names.dateTime.format(new Date(entry.at)),
+            dateTime: entry.at,
+            source: t(entry.actor ? "manual" : "system"),
+            fields: entry.fields
+              .filter((field) => field.field !== "photoFileId")
+              .map((field) => ({
+                label: known(`fields.${field.field}`)
+                  ? t(`fields.${field.field}` as never)
+                  : field.field,
+                from: value(field.field, field.from),
+                to: value(field.field, field.to),
+              })),
+            reason: entry.reason ?? undefined,
+          }))}
+        />
+      ) : (
+        <p className="text-body text-muted-foreground">{t("empty")}</p>
+      )}
     </Card>
   )
 }

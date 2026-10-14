@@ -180,7 +180,9 @@
     "clear": "Clear",
     "increase": "Increase",
     "decrease": "Decrease",
-    "charactersLeft": "{count, plural, one {# character left} other {# characters left}}"
+    "charactersLeft": "{count, plural, one {# character left} other {# characters left}}",
+    "yes": "Yes",
+    "no": "No"
   },
   "table": {
     "sortedAscending": "sorted ascending",
@@ -359,24 +361,22 @@
         "name": "Company name",
         "timezone": "Timezone",
         "timezoneHint": "All times are in company time. A change applies to attendance from tomorrow.",
-        "accent": "Accent colour",
-        "accentHint": "Used only for the ring around your logo.",
-        "outlineLight": "Shown with an outline in light mode so it stays visible.",
-        "outlineDark": "Shown with an outline in dark mode so it stays visible."
+        "timezonePending": "The new timezone applies from {date}. Until then, times use the previous one."
       },
       "logo": {
         "label": "Logo",
         "choose": "Choose a logo",
         "replace": "Replace logo",
         "remove": "Remove",
-        "hint": "PNG, SVG or JPG · square · up to 1 MB",
+        "hint": "PNG, JPG or WebP · square · up to 2 MB",
         "done": "Logo updated",
-        "wrongType": "{file} isn't supported. Use PNG, SVG or JPG.",
-        "tooBig": "{file} is larger than 1 MB.",
+        "wrongType": "{file} isn't supported. Use PNG, JPG or WebP.",
+        "tooBig": "{file} is larger than 2 MB.",
         "on": {
           "light": "Light mode",
           "dark": "Dark mode"
-        }
+        },
+        "failed": "Couldn't update the logo. Try again."
       },
       "calendar": {
         "title": "Work calendar",
@@ -403,17 +403,23 @@
         "now": "now",
         "changedTo": "changed to",
         "showAll": "Show all ({count})",
+        "system": "System",
+        "empty": "No changes yet.",
+        "logoSet": "Logo",
         "fields": {
           "name": "Company name",
           "timezone": "Timezone",
-          "accent": "Accent colour",
+          "weekStart": "Week starts",
           "workingDays": "Working days",
-          "workStart": "Work starts",
-          "workEnd": "Work ends",
-          "graceMinutes": "Late grace",
-          "leaveYearStartMonth": "Leave year starts"
+          "workStartTime": "Work starts",
+          "workEndTime": "Work ends",
+          "lateGraceMinutes": "Late grace",
+          "leaveYearStartMonth": "Leave year starts",
+          "logoFileId": "Logo",
+          "disabledRequestTypes": "Turned-off request types"
         }
-      }
+      },
+      "failed": "Couldn't save the settings. Try again."
     },
     "holidays": {
       "title": "Public holidays",
@@ -429,7 +435,7 @@
       "delete": "Delete",
       "addTitle": "Add a holiday",
       "editTitle": "Edit holiday",
-      "dialogDescription": "We'll check for approved requests on that day before saving.",
+      "dialogDescription": "One day or several. Approved requests on these days are listed after saving; they aren't changed.",
       "saveNew": "Add holiday",
       "saveEdit": "Save holiday",
       "added": "{name} added",
@@ -440,17 +446,19 @@
         "body": "Add your public holidays so leave and attendance skip them."
       },
       "impact": {
-        "title": "{count, plural, one {# approved request is on this day} other {# approved requests are on this day}}",
-        "description": "They stay as they are. Open each one to cancel it with a reason, or leave it unchanged.",
-        "back": "Go back",
-        "confirm": "Add holiday anyway"
+        "title": "{count, plural, one {# approved request falls on this holiday} other {# approved requests fall on this holiday}}",
+        "description": "The holiday is saved. These requests stay as they are: open one to cancel it with a reason.",
+        "back": "Close",
+        "confirm": "Got it"
       },
       "deleteDialog": {
         "title": "Delete {name}?",
         "description": "{date} becomes a working day again for attendance and leave.",
         "keep": "Keep holiday",
         "confirm": "Delete holiday"
-      }
+      },
+      "dates": "Dates",
+      "failed": "Couldn't save the holiday. Try again."
     },
     "leaveTypes": {
       "title": "Leave types",
@@ -502,41 +510,28 @@
         "confirm": "Delete leave type"
       },
       "icons": {
-        "tree-palm": "Palm tree",
-        "thermometer": "Thermometer",
-        "siren": "Siren",
-        "banknote": "Banknote",
-        "landmark": "Landmark",
-        "baby": "Baby",
-        "calendar-plus": "Calendar plus",
-        "heart": "Heart",
-        "graduation-cap": "Graduation cap",
-        "users": "People",
-        "moon": "Moon",
-        "briefcase": "Briefcase"
-      }
+        "annual": "Palm tree",
+        "sick": "Thermometer",
+        "emergency": "Siren",
+        "unpaid": "Banknote",
+        "hajj": "Landmark",
+        "maternity": "Baby",
+        "paternity": "People",
+        "marriage": "Heart",
+        "study": "Graduation cap",
+        "bereavement": "Moon",
+        "other": "Briefcase"
+      },
+      "failed": "Couldn't save the leave type. Try again."
     },
     "requestTypes": {
       "title": "Request types",
       "description": "Turn off what your company doesn't use. Changes save at once and apply to everyone.",
       "hidden": "Hidden from the request form.",
-      "types": {
-        "wfh": {
-          "name": "Work from home",
-          "approver": "Approved by the employee's manager."
-        },
-        "correction": {
-          "name": "Attendance correction",
-          "approver": "Approved by HR."
-        },
-        "permission": {
-          "name": "Permission / early leave",
-          "approver": "Approved by the employee's manager."
-        },
-        "trip": {
-          "name": "Business trip",
-          "approver": "Approved by the manager, then HR."
-        }
+      "failed": "Couldn't save that change. Try again.",
+      "approver": {
+        "MANAGER_WITH_ADMIN_FALLBACK": "Approved by the employee's manager, or HR when there's none.",
+        "ADMIN_ONLY": "Approved by HR."
       }
     }
   },
@@ -548,7 +543,6 @@
       "people": "People",
       "departments": "Departments"
     },
-    "noDepartment": "No department",
     "noData": "No data",
     "filterLabel": "Filter employees",
     "searchPlaceholder": "Search name, email or code",
@@ -565,65 +559,44 @@
         "confirm": "Confirm",
         "result": "Result"
       },
-      "columns": {
-        "name": "Name",
-        "email": "Email",
-        "job_title": "Job title",
-        "department": "Department",
-        "manager_email": "Manager email",
-        "role": "Role",
-        "joined_on": "Joined on"
-      },
       "upload": {
         "title": "Upload your file",
-        "body": "Use our template so the columns match. Dates are YYYY-MM-DD, and role is employee, manager or admin.",
+        "body": "Use our template so the columns match. name, email and joiningDate are required; dates are YYYY-MM-DD and role is EMPLOYEE, MANAGER or ADMIN.",
         "template": "Download template",
         "choose": "<button>Choose a file</button> or drag it here",
         "drop": "Drop to upload",
-        "constraints": "CSV · up to 5 MB · 1,000 rows",
+        "constraints": "CSV · up to 1 MB · 1,000 rows",
         "wrongType": "{file} isn't supported. Use a CSV file.",
-        "tooBig": "{file} is larger than 5 MB.",
+        "tooBig": "{file} is larger than 1 MB.",
         "EMPTY": "{file} has no rows to import.",
         "WRONG_COLUMNS": "{file} doesn't have the template's columns. Download the template and try again.",
         "TOO_MANY_ROWS": "{file} has more than 1,000 rows. Split it into smaller files."
       },
-      "problems": {
-        "REQUIRED": "{column} is missing",
-        "INVALID_EMAIL": "Email isn't valid",
-        "DUPLICATE_EMAIL": "Email is already in use",
-        "UNKNOWN_DEPARTMENT": "No department with this name",
-        "UNKNOWN_MANAGER": "No active employee with this manager email",
-        "INVALID_ROLE": "Role must be employee, manager or admin",
-        "INVALID_DATE": "Joined on must be a date like 2026-05-01"
-      },
       "preview": {
         "title": "Check the rows",
-        "summary": "{total, plural, one {# row} other {# rows}} · {ok} ready · {bad, plural, one {# needs a fix} other {# need fixes}}",
-        "show": "Show rows",
-        "all": "All",
-        "errors": "Errors",
+        "summary": "{total, plural, one {# row} other {# rows}} in the file. Each one is checked when you import.",
         "caption": "Rows in your file",
         "line": "Line",
         "problem": "Problem",
         "downloadErrors": "Download errors",
-        "next": "{count, plural, one {Import # row} other {Import # rows}}",
-        "noValidRows": "No rows are ready. Fix the file and upload it again."
+        "next": "{count, plural, one {Import # row} other {Import # rows}}"
       },
       "confirm": {
         "title": "Confirm the import",
         "create": "{count, plural, one {# employee will be added} other {# employees will be added}}",
-        "skip": "{count, plural, one {# row with problems will be skipped} other {# rows with problems will be skipped}}",
-        "sendInvites": "Send invites now",
-        "sendInvitesHint": "Each person gets an email to set their password.",
-        "submit": "{count, plural, one {Import # employee} other {Import # employees}}"
+        "skip": "Rows with problems are skipped; you'll see why after the import.",
+        "submit": "{count, plural, one {Import # employee} other {Import # employees}}",
+        "invites": "Everyone added gets an email invite to set their password."
       },
       "result": {
         "title": "Import finished",
         "toast": "{count, plural, one {# employee imported} other {# employees imported}}",
         "imported": "{count, plural, one {# employee imported} other {# employees imported}}",
         "skipped": "{count, plural, one {# row skipped. Download the errors to fix it.} other {# rows skipped. Download the errors to fix them.}}",
-        "view": "View invited employees"
-      }
+        "view": "View invited employees",
+        "caption": "Rows that weren't imported"
+      },
+      "failed": "Couldn't run the import. Try again."
     },
     "importCsv": "Import CSV",
     "add": "Add employee",
@@ -665,15 +638,14 @@
       "joinedOn": "Joined on",
       "code": "Employee code (optional)",
       "codeHint": "Your own ID, e.g. from payroll.",
-      "sendInvite": "Send the invite now",
       "saveNew": "Add employee",
       "saveEdit": "Save changes",
-      "created": "{name} added",
       "invited": "{name} added and invited",
       "updated": "{name} updated",
       "noManager": "No manager",
       "managerSearch": "Search people",
-      "managerEmpty": "Nobody matches"
+      "managerEmpty": "Nobody matches",
+      "failed": "Couldn't save the employee. Try again."
     },
     "detail": {
       "title": "Employee",
@@ -682,13 +654,13 @@
       "inviteResent": "Invite sent again to {email}",
       "deactivate": "Deactivate",
       "reactivate": "Reactivate",
-      "reactivated": "{name} can sign in again"
+      "reactivated": "{name} can sign in again",
+      "failed": "Couldn't do that. Try again."
     },
     "deactivate": {
       "title": "Deactivate {name}?",
-      "description": "They can't sign in any more. Their history and balances are kept, and you can reactivate them later.",
+      "description": "After their last working day they can't sign in. Their history and balances are kept, and you can reactivate them later.",
       "pending": "{count, plural, =0 {No pending requests} one {# pending request will be cancelled} other {# pending requests will be cancelled}}",
-      "upcoming": "{count, plural, =0 {No upcoming leave} one {# day of upcoming leave will be cancelled} other {# days of upcoming leave will be cancelled}}",
       "reports": "{count, plural, =0 {No direct reports} one {# direct report needs a new manager} other {# direct reports need a new manager}}",
       "newManager": "{count, plural, one {New manager for their direct report} other {New manager for their # direct reports}}",
       "chooseManager": "Choose a manager",
@@ -697,7 +669,12 @@
       "reassignFirst": "Choose a new manager for each direct report first.",
       "keep": "Keep active",
       "confirm": "Deactivate employee",
-      "done": "{name} deactivated"
+      "done": "{name} deactivated",
+      "lastDay": "Last working day",
+      "lastDayHint": "They can sign in until the end of this day.",
+      "checking": "Checking what changes…",
+      "failed": "Couldn't deactivate them. Try again.",
+      "upcoming": "{count, plural, =0 {No upcoming time off} one {# approved request ahead will be cancelled} other {# approved requests ahead will be cancelled}}"
     },
     "balances": {
       "title": "Leave balances",
@@ -734,7 +711,9 @@
       "reason": "Reason",
       "reasonHint": "The employee can see this.",
       "save": "Save adjustment",
-      "adjusted": "{type} adjusted for {name}"
+      "adjusted": "{type} adjusted for {name}",
+      "fromRequest": "Request",
+      "failed": "Couldn't adjust the balance. Try again."
     },
     "history": {
       "title": "Change history",
@@ -745,25 +724,32 @@
       "now": "now",
       "changedTo": "changed to",
       "showAll": "Show all ({count})",
+      "empty": "No changes yet.",
       "actions": {
-        "created": "Added",
-        "updated": "Edited details",
-        "deactivated": "Deactivated",
-        "reactivated": "Reactivated",
-        "inviteSent": "Sent invite",
-        "balanceAdjusted": "Adjusted balance",
-        "imported": "Imported from CSV"
+        "employee": {
+          "created": "Added",
+          "profileChanged": "Edited details",
+          "roleChanged": "Changed role",
+          "reportingLineChanged": "Changed manager or department",
+          "statusChanged": "Changed account status",
+          "photoChanged": "Changed photo"
+        }
       },
       "fields": {
         "name": "Name",
         "email": "Email",
+        "phone": "Phone",
         "jobTitle": "Job title",
-        "code": "Code",
-        "department": "Department",
-        "manager": "Manager",
+        "employeeCode": "Code",
+        "departmentId": "Department",
+        "managerId": "Manager",
         "role": "Role",
-        "joinedOn": "Joined on",
-        "status": "Account"
+        "joiningDate": "Joined on",
+        "employmentType": "Employment type",
+        "tracksAttendance": "Tracks attendance",
+        "status": "Account",
+        "lastWorkingDay": "Last working day",
+        "locale": "Language"
       }
     },
     "departments": {
@@ -792,8 +778,15 @@
         "description": "{count, plural, =0 {Nobody is in it.} one {# person will have no department until you choose one.} other {# people will have no department until you choose one.}}",
         "keep": "Keep department",
         "confirm": "Delete department"
-      }
-    }
+      },
+      "failed": "Couldn't save the department. Try again.",
+      "notEmpty": "{name} still has people in it. Move them first."
+    },
+    "errors": {
+      "LAST_ADMIN": "This is the company's last HR admin, so the role can't change.",
+      "HAS_DIRECT_REPORTS": "They still manage people. Move their direct reports first."
+    },
+    "noDepartment": "No department"
   },
   "attendance": {
     "title": "Attendance",

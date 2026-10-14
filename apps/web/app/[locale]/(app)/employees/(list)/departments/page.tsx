@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations, setRequestLocale } from "next-intl/server"
 
 import { DepartmentsPage } from "@/features/employees/departments"
+import { getDepartments } from "@/features/employees/employee-data"
 import type { Locale } from "@/i18n/routing"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,5 +14,5 @@ export default async function Page({
   params,
 }: PageProps<"/[locale]/employees/departments">) {
   setRequestLocale((await params).locale as Locale)
-  return <DepartmentsPage />
+  return <DepartmentsPage departments={await getDepartments()} />
 }

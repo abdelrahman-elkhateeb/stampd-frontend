@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { DEMO_APPROVED_REQUESTS, DEMO_COMPANY } from "@/features/settings/demo-data"
 import {
-  accentOutline,
-  affectedRequests,
-  contrast,
-  settingsDiff,
+  settingsChange,
   workingDaysSummary,
+  type CompanyValues,
 } from "@/features/settings/rules"
 
 const NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -27,40 +24,28 @@ describe("workingDaysSummary", () => {
   })
 })
 
-describe("accent contrast", () => {
-  it("matches WCAG for black and white", () => {
-    expect(contrast("#000000", "#FFFFFF")).toBeCloseTo(21)
-  })
+describe("settingsChange", () => {
+  const company: CompanyValues = {
+    name: "Demo",
+    timezone: "Asia/Riyadh",
+    workingDays: [0, 1, 2, 3, 4],
+    workStart: "09:00",
+    workEnd: "17:00",
+    graceMinutes: 0,
+    leaveYearStartMonth: 1,
+  }
 
-  it("outlines the default butter in light mode only", () => {
-    expect(accentOutline("#F9DC5C")).toEqual({ light: true, dark: false })
-    expect(accentOutline("#1D4ED8")).toEqual({ light: false, dark: true })
-  })
-})
-
-describe("affectedRequests", () => {
-  it("finds approved requests that include the holiday", () => {
+  it("sends only changed fields, under the API's names", () => {
     expect(
-      affectedRequests("2026-10-20", DEMO_APPROVED_REQUESTS).map((r) => r.id)
-    ).toEqual(["1042", "1057"])
-    expect(affectedRequests("2026-10-22", DEMO_APPROVED_REQUESTS)).toHaveLength(
-      1
-    )
-    expect(affectedRequests("2026-10-23", DEMO_APPROVED_REQUESTS)).toEqual([])
-  })
-})
-
-describe("settingsDiff", () => {
-  it("lists only changed fields", () => {
-    const after = {
-      ...DEMO_COMPANY,
-      graceMinutes: 5,
-      workingDays: [1, 2, 3, 4, 5] as typeof DEMO_COMPANY.workingDays,
-    }
-    expect(settingsDiff(DEMO_COMPANY, after).map((f) => f.field)).toEqual([
-      "workingDays",
-      "graceMinutes",
-    ])
-    expect(settingsDiff(DEMO_COMPANY, { ...DEMO_COMPANY })).toEqual([])
+      settingsChange(company, {
+        ...company,
+        graceMinutes: 5,
+        workingDays: [5, 1, 2, 3, 4],
+      })
+    ).toEqual({
+      workingDays: ["MON", "TUE", "WED", "THU", "FRI"],
+      lateGraceMinutes: 5,
+    })
+    expect(settingsChange(company, { ...company })).toEqual({})
   })
 })
