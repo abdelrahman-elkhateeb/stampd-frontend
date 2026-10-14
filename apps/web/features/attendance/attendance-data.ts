@@ -191,3 +191,17 @@ export async function getDayDetail(
     })),
   }
 }
+
+export type AttendanceException = {
+  employee: { id: string; name: string }
+  day: Day
+}
+
+/** Admin: Missing Checkout and Absent days in a range (≤ the API's limit), newest first. */
+export async function getExceptions(from: PlainDate, to: PlainDate) {
+  // ponytail: first 100; page when a company has more in a month.
+  const { items } = await api<{
+    items: (ApiDay & { employee: { id: string; name: string } })[]
+  }>(`/attendance/exceptions?from=${from}&to=${to}&pageSize=100`)
+  return items.map(({ employee, ...day }) => ({ employee, day: toDay(day) }))
+}

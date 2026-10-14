@@ -27,3 +27,38 @@ export async function checkIn() {
 export async function checkOut() {
   return post("/attendance/check-out", "checkOutAt")
 }
+
+// ── HR corrections (FE-11): each change needs a reason, kept in the day's history ──
+
+async function correct(path: string, method: string, body: object) {
+  const problem = await attempt(() => api(path, { method, body }))
+  if (!problem) refresh()
+  return problem
+}
+
+export async function addSession(
+  employeeId: string,
+  date: string,
+  body: { checkInAt: string; checkOutAt: string; reason: string }
+) {
+  return correct(
+    `/attendance/employees/${employeeId}/days/${date}/sessions`,
+    "POST",
+    body
+  )
+}
+
+export async function editSession(
+  id: string,
+  body: { checkInAt: string; checkOutAt: string | null; reason: string }
+) {
+  const { checkOutAt, ...rest } = body
+  return correct(`/attendance/sessions/${id}`, "PATCH", {
+    ...rest,
+    ...(checkOutAt && { checkOutAt }),
+  })
+}
+
+export async function removeSession(id: string, reason: string) {
+  return correct(`/attendance/sessions/${id}`, "DELETE", { reason })
+}

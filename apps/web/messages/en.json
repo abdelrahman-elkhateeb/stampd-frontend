@@ -1199,5 +1199,48 @@
       "title": "Nothing planned this month",
       "body": "Approved leave, WFH, trips and holidays show up here."
     }
+  },
+  "attendanceReview": {
+    "title": "Attendance review",
+    "description": "Everyone's days, the exceptions to fix and correction requests.",
+    "tabs": {
+      "day": "Day",
+      "month": "Month",
+      "exceptions": "Exceptions this month",
+      "corrections": "Correction requests"
+    },
+    "date": "Day",
+    "month": "Month",
+    "dayCaption": "Attendance on {date}",
+    "monthCaption": "Attendance in {month}",
+    "columns": {
+      "employee": "Employee",
+      "status": "Status",
+      "inOut": "In – out",
+      "worked": "Worked"
+    },
+    "noExceptions": {
+      "title": "No exceptions this month",
+      "body": "Absences and missing check-outs show up here to review."
+    },
+    "noCorrections": {
+      "title": "No correction requests",
+      "body": "Requests to fix a day show up here."
+    },
+    "editor": {
+      "title": "Correct this day",
+      "reason": "Reason",
+      "reasonHint": "Required, and kept in the day's history",
+      "reasonFirst": "Add a reason before you change a session.",
+      "session": "Session {index}",
+      "in": "Check-in",
+      "out": "Check-out",
+      "save": "Save",
+      "remove": "Remove session {index}",
+      "add": "Add session",
+      "timesInvalid": "Check-out must be after check-in.",
+      "failed": "Couldn't save that change. Check the times and try again.",
+      "saved": "Day corrected"
+    }
   }
 }

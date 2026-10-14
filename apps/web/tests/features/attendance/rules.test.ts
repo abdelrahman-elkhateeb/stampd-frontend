@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest"
 import {
   addMonths,
   companyDate,
+  companyInstant,
+  companyTime,
   monthGrid,
   monthSummary,
   toAttendanceStatus,
@@ -18,6 +20,15 @@ describe("company time", () => {
     expect(companyDate(new Date(riyadh("01:00")), "Asia/Riyadh")).toBe(
       "2026-10-08"
     )
+  })
+})
+
+describe("company wall-clock times", () => {
+  it("turns a company time into an instant and back", () => {
+    expect(companyInstant("2026-10-08", "08:02", "Asia/Riyadh")).toBe(
+      "2026-10-08T05:02:00.000Z"
+    )
+    expect(companyTime("2026-10-08T05:02:00.000Z", "Asia/Riyadh")).toBe("08:02")
   })
 })
 

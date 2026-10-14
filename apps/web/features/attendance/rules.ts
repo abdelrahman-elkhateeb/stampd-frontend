@@ -68,6 +68,34 @@ export function companyDate(instant: Date, timeZone: string): PlainDate {
   }).format(instant) as PlainDate
 }
 
+/** Minutes since company midnight. */
+export function companyMinutes(instant: string | number, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(instant))
+  const part = (type: string) =>
+    Number(parts.find((item) => item.type === type)?.value)
+  return part("hour") * 60 + part("minute")
+}
+
+/** An instant as "HH:mm" in company time (for time inputs). */
+export function companyTime(instant: string, timeZone: string) {
+  const minutes = companyMinutes(instant, timeZone)
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
+}
+
+/** The instant a company wall-clock time happens on a day. */
+export function companyInstant(day: PlainDate, time: string, timeZone: string) {
+  const guess = Date.parse(`${day}T${time}:00Z`)
+  let offset = companyMinutes(guess, timeZone) - clockMinutes(time)
+  if (offset > 720) offset -= 1440
+  if (offset < -720) offset += 1440
+  return new Date(guess - offset * 60_000).toISOString()
+}
+
 /** "08:15" → 495. */
 export function clockMinutes(time: string) {
   const [h = 0, m = 0] = time.split(":").map(Number)
