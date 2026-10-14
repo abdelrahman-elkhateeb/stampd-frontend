@@ -34,7 +34,6 @@ import { cn } from "@workspace/ui/lib/utils"
 import { CorrectionEditor } from "./correction-editor"
 import { TABS, type Tab } from "./tabs"
 
-
 /**
  * FE-11 HR attendance review. The URL holds the tab, the day or month, and the open
  * employee-day (?employee=&day=); the server reads them all.
@@ -85,7 +84,10 @@ export function ReviewPage({
         <h1 className="text-h2 font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
-      <div role="tablist" className="flex gap-1 overflow-x-auto overflow-y-hidden border-b">
+      <div
+        role="tablist"
+        className="flex gap-1 overflow-x-auto overflow-y-hidden border-b"
+      >
         {TABS.map((id) => (
           <button
             key={id}
@@ -265,7 +267,7 @@ export function ReviewPage({
 }
 
 /** calendar.md › attendance-month: employees × days, one status bar per cell. */
-function MonthMatrix({
+export function MonthMatrix({
   month,
   today,
   grid,

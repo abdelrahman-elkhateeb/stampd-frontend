@@ -1306,5 +1306,13 @@
       "rejected": "Rejected",
       "type": "Type"
     }
+  },
+  "team": {
+    "title": "My team",
+    "description": "Your direct reports' attendance this month. Open a day to see its sessions.",
+    "empty": {
+      "title": "No direct reports",
+      "body": "People who report to you show up here."
+    }
   }
 }
