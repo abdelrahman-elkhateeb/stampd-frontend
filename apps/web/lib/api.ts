@@ -20,6 +20,8 @@ export function apiUrl(path: string) {
  *
  * GETs are page reads: 404 → not-found page, 403 → no-access page.
  * Anything else throws ApiError for the caller (forms map `fieldErrors`).
+ * A Blob body goes raw with its own type (image uploads); anything else as JSON.
+ * An unreachable API is a 503 ApiError, so actions can show "try again".
  */
 export async function api<T = unknown>(
   path: string,
@@ -28,18 +30,21 @@ export async function api<T = unknown>(
   const [jar, incoming] = await Promise.all([cookies(), headers()])
   const token = jar.get(ACCESS_COOKIE)?.value
   const requestId = incoming.get("x-request-id")
+  const raw = body instanceof Blob
   const response = await fetch(apiUrl(path), {
     ...init,
     cache: "no-store",
     headers: {
       Accept: "application/json",
-      ...(body !== undefined && { "Content-Type": "application/json" }),
+      ...(body !== undefined && {
+        "Content-Type": raw ? body.type : "application/json",
+      }),
       ...(token && { Authorization: `Bearer ${token}` }),
       ...(requestId && { "X-Request-Id": requestId }),
       ...init.headers,
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+    body: raw ? body : body === undefined ? undefined : JSON.stringify(body),
+  }).catch(() => new Response(null, { status: 503 }))
   if (response.ok)
     return (response.status === 204 ? undefined : await response.json()) as T
 

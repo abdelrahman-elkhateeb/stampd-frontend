@@ -1,7 +1,7 @@
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form"
 import type { z } from "zod"
 
-import type { ApiFieldError } from "@/lib/api-error"
+import type { Problem } from "@/lib/api-error"
 
 export type FieldErrorCode =
   "REQUIRED" | "INVALID_FORMAT" | "TOO_SHORT" | "TOO_LONG"
@@ -28,7 +28,7 @@ export const codeErrorMap = { error: issueToFieldCode }
  */
 export function showProblem<T extends FieldValues>(
   form: UseFormReturn<T>,
-  problem: { code: string; fieldErrors: ApiFieldError[] },
+  problem: Problem,
   fields: Record<string, string> = {}
 ) {
   const values = form.getValues()

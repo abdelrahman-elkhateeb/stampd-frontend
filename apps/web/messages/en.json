@@ -300,12 +300,15 @@
     "title": "Profile",
     "description": "Your details, photo, password and preferences.",
     "preferences": "Preferences",
+    "failed": "Couldn't save your change. Try again.",
     "photo": {
       "change": "Change photo",
       "hint": "JPG or PNG · up to 2 MB",
       "done": "Photo updated",
       "wrongType": "{file} isn't supported. Use JPG or PNG.",
-      "tooBig": "{file} is larger than 2 MB."
+      "tooBig": "{file} is larger than 2 MB.",
+      "remove": "Remove photo",
+      "removed": "Photo removed"
     },
     "details": {
       "title": "Details",

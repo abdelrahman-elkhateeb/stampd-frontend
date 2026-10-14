@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { getLocale } from "next-intl/server"
 
 import { redirect } from "@/i18n/navigation"
-import { toApiError, type ApiFieldError } from "@/lib/api-error"
+import { toApiError, type Problem } from "@/lib/api-error"
 import {
   clearSession,
   REFRESH_COOKIE,
@@ -17,10 +17,8 @@ import { authPost } from "./auth-api"
 // ponytail: placeholder until the legal documents exist (/terms, /privacy); bump it with them.
 const TERMS_VERSION = "2026-10"
 
-/** What a form shows when an action fails. Success returns undefined. */
-export type AuthProblem = { code: string; fieldErrors: ApiFieldError[] }
-
-async function toProblem(response: Response): Promise<AuthProblem> {
+/** Failures come back as a Problem; success returns undefined. */
+async function toProblem(response: Response): Promise<Problem> {
   const { code, fieldErrors } = await toApiError(response)
   return { code, fieldErrors }
 }

@@ -1,5 +1,8 @@
 export type ApiFieldError = { field: string; code: string; message: string }
 
+/** What a form shows when an action fails (see showProblem). */
+export type Problem = { code: string; fieldErrors: ApiFieldError[] }
+
 /** Every API error is `{ code, message, fieldErrors? }`; `message` is for logs only. */
 export class ApiError extends Error {
   readonly status: number

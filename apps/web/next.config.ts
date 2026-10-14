@@ -2,6 +2,8 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@workspace/ui"],
+  // Profile photos are up to 2 MB, sent as FormData (plus a little multipart overhead).
+  experimental: { serverActions: { bodySizeLimit: "3mb" } },
   // Photos and logos come back as signed /files/… URLs on the API. The browser
   // never talks to the API, so the Next server passes them through.
   async rewrites() {

@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CameraIcon, LogOutIcon } from "lucide-react"
+import { CameraIcon, LogOutIcon, Trash2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useTheme } from "next-themes"
 import { useRef, useState, useSyncExternalStore } from "react"
@@ -13,8 +13,14 @@ import { PasswordField, TextField } from "@/components/form-fields"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { useUser } from "@/components/user-provider"
 import { logout } from "@/features/auth/actions"
+import {
+  changePassword,
+  removePhoto,
+  savePhone,
+  uploadPhoto,
+} from "@/features/profile/actions"
 import type { Profile } from "@/features/profile/profile-data"
-import { codeErrorMap } from "@/lib/forms"
+import { codeErrorMap, showProblem } from "@/lib/forms"
 import { NewPassword, passwordRulesIssue } from "@/lib/password"
 import { useFormat } from "@/lib/use-format"
 import { PersonAvatar } from "@workspace/ui/components/avatar"
@@ -80,20 +86,44 @@ function IdentityCard({ profile }: { profile: Profile }) {
   const input = useRef<HTMLInputElement>(null)
   const [photo, setPhoto] = useState(profile.photoUrl)
   const [photoError, setPhotoError] = useState<string>()
+  const [busy, setBusy] = useState<"upload" | "remove">()
 
-  // ponytail: no crop step and no upload (BE-05); the photo shows locally until reload.
-  function onPhoto(file: File | undefined) {
-    if (!file) return
-    if (!PHOTO_TYPES.includes(file.type)) {
-      setPhotoError(t("photo.wrongType", { file: file.name }))
-    } else if (file.size > PHOTO_MAX_BYTES) {
-      setPhotoError(t("photo.tooBig", { file: file.name }))
-    } else {
-      setPhotoError(undefined)
-      setPhoto(URL.createObjectURL(file))
-      notify.success(t("photo.done"))
-    }
+  // ponytail: no crop step (spec: square crop); the API stores the image as sent.
+  async function onPhoto(file: File | undefined) {
     if (input.current) input.current.value = ""
+    if (!file) return
+    const tooBig = () => t("photo.tooBig", { file: file.name })
+    const wrongType = () => t("photo.wrongType", { file: file.name })
+    if (!PHOTO_TYPES.includes(file.type)) return setPhotoError(wrongType())
+    if (file.size > PHOTO_MAX_BYTES) return setPhotoError(tooBig())
+
+    setPhotoError(undefined)
+    setBusy("upload")
+    const data = new FormData()
+    data.set("file", file)
+    const result = await uploadPhoto(data).finally(() => setBusy(undefined))
+    if ("photoUrl" in result) {
+      setPhoto(result.photoUrl)
+      notify.success(t("photo.done"))
+    } else {
+      const code = result.problem.fieldErrors[0]?.code
+      setPhotoError(
+        code === "FILE_TOO_LARGE"
+          ? tooBig()
+          : code === "UNSUPPORTED_FILE_TYPE"
+            ? wrongType()
+            : t("failed")
+      )
+    }
+  }
+
+  async function onRemove() {
+    setPhotoError(undefined)
+    setBusy("remove")
+    const problem = await removePhoto().finally(() => setBusy(undefined))
+    if (problem) return setPhotoError(t("failed"))
+    setPhoto(undefined)
+    notify.success(t("photo.removed"))
   }
 
   return (
@@ -125,15 +155,31 @@ function IdentityCard({ profile }: { profile: Profile }) {
           aria-hidden
           onChange={(event) => onPhoto(event.target.files?.[0])}
         />
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-fit"
-          onClick={() => input.current?.click()}
-        >
-          <CameraIcon aria-hidden />
-          {t("photo.change")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            loading={busy === "upload"}
+            disabled={!!busy}
+            onClick={() => input.current?.click()}
+          >
+            <CameraIcon aria-hidden />
+            {t("photo.change")}
+          </Button>
+          {photo ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive"
+              loading={busy === "remove"}
+              disabled={!!busy}
+              onClick={onRemove}
+            >
+              <Trash2Icon aria-hidden />
+              {t("photo.remove")}
+            </Button>
+          ) : null}
+        </div>
         <p className="text-caption text-muted-foreground">{t("photo.hint")}</p>
         {photoError ? (
           <p role="alert" className="text-body-sm text-error">
@@ -158,8 +204,13 @@ function DetailsCard({ profile }: { profile: Profile }) {
     defaultValues: { phone: user.phone },
   })
 
-  // ponytail: no API yet (BE-05); the value stays until reload.
-  const onSubmit = form.handleSubmit((body) => {
+  const onSubmit = form.handleSubmit(async (body) => {
+    const problem = await savePhone(body.phone)
+    if (problem) {
+      showProblem(form, problem)
+      if (form.formState.errors.root) notify.error(t("failed"))
+      return
+    }
     form.reset(body)
     notify.success(t("details.phoneSaved"))
   })
@@ -205,7 +256,11 @@ function DetailsCard({ profile }: { profile: Profile }) {
           />
         </FieldGroup>
         <CardFooter>
-          <Button type="submit" disabled={!form.formState.isDirty}>
+          <Button
+            type="submit"
+            disabled={!form.formState.isDirty}
+            loading={form.formState.isSubmitting}
+          >
             {t("details.savePhone")}
           </Button>
         </CardFooter>
@@ -274,6 +329,8 @@ const passwordBody = (personal: string[]) =>
 
 function PasswordCard() {
   const t = useTranslations("profile.password")
+  const tProfile = useTranslations("profile")
+  const tAuth = useTranslations("auth")
   const user = useUser()
   const personal = [user.name, user.email]
   const form = useForm({
@@ -281,10 +338,19 @@ function PasswordCard() {
     defaultValues: { current: "", password: "" },
   })
 
-  // ponytail: no API yet (BE-02); the server checks the current password and signs out other sessions.
-  const onSubmit = form.handleSubmit(() => {
-    form.reset()
-    notify.success(t("done"))
+  const onSubmit = form.handleSubmit(async (body) => {
+    const problem = await changePassword(body)
+    if (!problem) {
+      form.reset()
+      return notify.success(t("done"))
+    }
+    if (problem.code === "TOO_MANY_ATTEMPTS")
+      return notify.error(tAuth("login.errors.locked"))
+    showProblem(form, problem, {
+      currentPassword: "current",
+      newPassword: "password",
+    })
+    if (form.formState.errors.root) notify.error(tProfile("failed"))
   })
 
   return (
@@ -310,7 +376,9 @@ function PasswordCard() {
           />
         </FieldGroup>
         <CardFooter>
-          <Button type="submit">{t("submit")}</Button>
+          <Button type="submit" loading={form.formState.isSubmitting}>
+            {t("submit")}
+          </Button>
         </CardFooter>
       </form>
     </Card>
