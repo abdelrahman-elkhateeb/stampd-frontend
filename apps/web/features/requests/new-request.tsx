@@ -12,8 +12,7 @@ import { FieldError } from "@workspace/ui/components/field"
 import { RadioCard, RadioGroup } from "@workspace/ui/components/radio-group"
 
 import { DEMO_REQUEST_TYPES } from "./demo-data"
-import { RequestForm } from "./request-form"
-import { useRequestText } from "./request-text"
+import { RequestForm, useDemoText } from "./request-form"
 
 /** Only enabled types are offered (FE-08 AC); a disabled or unknown ?type= shows the picker. */
 const ENABLED = DEMO_REQUEST_TYPES.filter((type) => type.enabled)
@@ -48,7 +47,7 @@ export function NewRequestPage() {
 
 function TypePicker({ onPick }: { onPick: (key: string) => void }) {
   const t = useTranslations("requests")
-  const text = useRequestText()
+  const text = useDemoText()
   const router = useRouter()
   const [selected, setSelected] = useState<string>("")
   const [missing, setMissing] = useState(false)

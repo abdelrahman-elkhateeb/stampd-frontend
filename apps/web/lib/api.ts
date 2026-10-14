@@ -4,7 +4,7 @@ import { getLocale } from "next-intl/server"
 import { cache } from "react"
 
 import { redirect } from "@/i18n/navigation"
-import { toApiError } from "@/lib/api-error"
+import { ApiError, toApiError, type Problem } from "@/lib/api-error"
 import { ACCESS_COOKIE } from "@/lib/session"
 import { toUser, type MeResponse } from "@/lib/user"
 
@@ -58,6 +58,18 @@ export async function api<T = unknown>(
   if (isRead && response.status === 403)
     redirect({ href: "/no-access", locale })
   throw await toApiError(response)
+}
+
+/** For server actions: API errors come back as a Problem (success: undefined); redirects (401) still throw. */
+export async function attempt(
+  call: () => Promise<unknown>
+): Promise<Problem | undefined> {
+  try {
+    await call()
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error
+    return { code: error.code, fieldErrors: error.fieldErrors }
+  }
 }
 
 /** The signed-in user; one API call per request however many components ask. */

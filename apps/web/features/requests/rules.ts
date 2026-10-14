@@ -1,6 +1,5 @@
 import { z } from "zod"
 
-import type { Role } from "@/lib/user"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import type { RequestStatus } from "@workspace/ui/components/status-chip"
 
@@ -215,87 +214,4 @@ export function findLeaveConflict(
     }
   }
   return null
-}
-
-export type RequestAction = "withdraw" | "requestCancellation" | "adminCancel"
-
-/**
- * What the viewer may do (lifecycle: Pending → Approved / Rejected / Withdrawn;
- * Approved → Cancellation requested → Cancelled). ponytail: the API returns allowed actions.
- */
-export function allowedActions(
-  request: MyRequest,
-  meta: RequestTypeMeta | undefined,
-  viewer: { id: string; role: Role },
-  today: PlainDate
-): RequestAction[] {
-  const own = request.employeeId === viewer.id
-  const start = meta ? requestSpan(meta, request.values)?.from : undefined
-  const actions: RequestAction[] = []
-  if (own && request.status === "pending") actions.push("withdraw")
-  if (
-    own &&
-    request.status === "approved" &&
-    start !== undefined &&
-    start > today
-  ) {
-    actions.push("requestCancellation")
-  }
-  if (
-    viewer.role === "admin" &&
-    (request.status === "approved" || request.status === "cancel-requested")
-  ) {
-    actions.push("adminCancel")
-  }
-  return actions
-}
-
-/** Employees and managers open only their own requests; admins open any (BE-03). */
-export function canView(
-  request: MyRequest,
-  viewer: { id: string; role: Role }
-) {
-  return viewer.role === "admin" || request.employeeId === viewer.id
-}
-
-export type RequestFilters = {
-  types: string[]
-  statuses: RequestStatus[]
-  from: PlainDate | null
-  to: PlainDate | null
-}
-
-/** The viewer's requests, filtered, newest first. A date filter keeps requests that overlap it. */
-export function queryRequests(
-  requests: MyRequest[],
-  types: RequestTypeMeta[],
-  employeeId: string,
-  filters: RequestFilters
-) {
-  return requests
-    .filter((request) => request.employeeId === employeeId)
-    .filter(
-      (request) =>
-        filters.types.length === 0 || filters.types.includes(request.type)
-    )
-    .filter(
-      (request) =>
-        filters.statuses.length === 0 ||
-        filters.statuses.includes(request.status)
-    )
-    .filter((request) => {
-      if (!filters.from && !filters.to) return true
-      const meta = types.find((type) => type.key === request.type)
-      const span = meta ? requestSpan(meta, request.values) : null
-      if (!span) return false
-      return (
-        (!filters.to || span.from <= filters.to) &&
-        (!filters.from || span.to >= filters.from)
-      )
-    })
-    .sort((a, b) => submittedAt(b).localeCompare(submittedAt(a)))
-}
-
-export function submittedAt(request: MyRequest) {
-  return request.events[0]?.at ?? ""
 }

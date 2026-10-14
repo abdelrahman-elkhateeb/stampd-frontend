@@ -8,13 +8,14 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from "nuqs"
+import { useTransition } from "react"
 
 import { DateRangeField } from "@/components/pickers"
-import { companyDate } from "@/features/attendance/rules"
 import { Status, useStatusLabel } from "@/components/status"
+import { useUser } from "@/components/user-provider"
+import { companyDate } from "@/features/attendance/rules"
 import { Link } from "@/i18n/navigation"
 import { isPlainDate } from "@/lib/format"
-import { DEMO_USER } from "@/lib/demo-user"
 import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import { CategoryIcon } from "@workspace/ui/components/category-chip"
@@ -26,15 +27,10 @@ import {
 } from "@workspace/ui/components/dropdown-menu"
 import { EmptyState } from "@workspace/ui/components/empty-state"
 import { FiltersBar, FilterTrigger } from "@workspace/ui/components/filters-bar"
-import { Skeleton, SkeletonGroup } from "@workspace/ui/components/skeleton"
 import { REQUEST_STATUSES } from "@workspace/ui/components/status-chip"
 
-import { DEMO_REQUEST_TYPES } from "./demo-data"
-import { useRequestText } from "./request-text"
-import { queryRequests, submittedAt } from "./rules"
-import { useRequests } from "./store"
-
-const TYPE_KEYS = DEMO_REQUEST_TYPES.map((type) => type.key)
+import type { LeaveTypeName, Request, RequestType } from "./request-data"
+import { categoryOf, useRequestText } from "./request-text"
 
 // Status filters keep their status colours (filters-bar.md).
 const STATUS_TONES = {
@@ -47,7 +43,13 @@ const STATUS_TONES = {
   cancelled: "bg-status-cancelled-bg text-status-cancelled",
 } as const
 
-export function RequestsPage() {
+type Props = {
+  requests: Request[]
+  types: RequestType[]
+  leaveTypes: LeaveTypeName[]
+}
+
+export function RequestsPage(props: Props) {
   const t = useTranslations("requests")
   return (
     <div className="flex flex-col gap-6">
@@ -63,48 +65,38 @@ export function RequestsPage() {
           </Link>
         </Button>
       </div>
-      <RequestsList />
+      <RequestsList {...props} />
     </div>
   )
 }
 
-function RequestsList() {
+function RequestsList({ requests: rows, types, leaveTypes }: Props) {
   const t = useTranslations("requests")
   const tAll = useTranslations()
   const format = useFormat()
   const statusLabel = useStatusLabel()
-  const text = useRequestText()
-  const requests = useRequests()
+  const text = useRequestText({ types, leaveTypes })
+  const { timezone } = useUser().company
+  const [loading, startTransition] = useTransition()
+  // The server filters: each change re-renders the page with the new list.
   const [filters, setFilters] = useQueryStates(
     {
-      type: parseAsArrayOf(parseAsStringLiteral(TYPE_KEYS)).withDefault([]),
+      type: parseAsArrayOf(parseAsString).withDefault([]),
       status: parseAsArrayOf(
         parseAsStringLiteral(REQUEST_STATUSES)
       ).withDefault([]),
       from: parseAsString,
       to: parseAsString,
     },
-    { history: "replace", clearOnDefault: true }
+    {
+      history: "replace",
+      clearOnDefault: true,
+      shallow: false,
+      startTransition,
+    }
   )
   const from = filters.from && isPlainDate(filters.from) ? filters.from : null
   const to = filters.to && isPlainDate(filters.to) ? filters.to : null
-
-  if (!requests) {
-    return (
-      <SkeletonGroup label={t("loading")} className="flex flex-col gap-2">
-        {[0, 1, 2, 3].map((row) => (
-          <Skeleton key={row} className="h-20 rounded-lg" />
-        ))}
-      </SkeletonGroup>
-    )
-  }
-
-  const rows = queryRequests(requests, DEMO_REQUEST_TYPES, DEMO_USER.id, {
-    types: filters.type,
-    statuses: filters.status,
-    from,
-    to,
-  })
   const filtersActive =
     filters.type.length > 0 || filters.status.length > 0 || Boolean(from)
 
@@ -124,7 +116,8 @@ function RequestsList() {
   const range = from && to ? format.dayRange(from, to) : null
 
   return (
-    <div className="flex flex-col gap-4">
+    // Busy while the server answers a filter change.
+    <div aria-busy={loading || undefined} className="flex flex-col gap-4">
       <FiltersBar
         label={t("filterLabel")}
         active={[
@@ -171,7 +164,7 @@ function RequestsList() {
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {TYPE_KEYS.map((type) => (
+            {types.map(({ key: type }) => (
               <DropdownMenuCheckboxItem
                 key={type}
                 checked={filters.type.includes(type)}
@@ -252,12 +245,7 @@ function RequestsList() {
                 href={`/requests/${request.id}`}
                 className="flex min-h-11 items-center gap-3 px-4 py-3 outline-none hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
               >
-                <CategoryIcon
-                  category={
-                    DEMO_REQUEST_TYPES.find((type) => type.key === request.type)
-                      ?.category ?? ""
-                  }
-                />
+                <CategoryIcon category={categoryOf(request.type)} />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-body font-bold">
                     {text.title(request)}
@@ -265,16 +253,15 @@ function RequestsList() {
                   <span className="truncate text-body-sm text-muted-foreground">
                     {text.when(request)}
                   </span>
-                  <span className="text-caption text-muted-foreground">
-                    {t("submittedOn", {
-                      date: format.day(
-                        companyDate(
-                          new Date(submittedAt(request)),
-                          DEMO_USER.company.timezone
-                        )
-                      ),
-                    })}
-                  </span>
+                  {request.submittedAt ? (
+                    <span className="text-caption text-muted-foreground">
+                      {t("submittedOn", {
+                        date: format.day(
+                          companyDate(new Date(request.submittedAt), timezone)
+                        ),
+                      })}
+                    </span>
+                  ) : null}
                 </span>
                 <Status status={request.status} size="sm" />
                 <ChevronRightIcon

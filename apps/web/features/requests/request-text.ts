@@ -1,85 +1,92 @@
 "use client"
 
-import { useLocale, useTranslations } from "next-intl"
+import { useTranslations } from "next-intl"
 
 import { useFormat } from "@/lib/use-format"
 
-import {
-  DEMO_REQUEST_TYPES,
-  type DateRange,
-  type FieldMeta,
-  type FieldValue,
-  type MyRequest,
-  type RequestTypeMeta,
-} from "./demo-data"
-import { localize, requestSpan } from "./rules"
+import type {
+  LeaveTypeName,
+  Request,
+  RequestType,
+  TypeField,
+} from "./request-data"
 
-export function requestType(key: string): RequestTypeMeta | undefined {
-  return DEMO_REQUEST_TYPES.find((type) => type.key === key)
+/** Category chips and icons by type key; unknown keys render neutral. */
+const CATEGORIES: Record<string, string> = {
+  LEAVE: "leave",
+  WFH: "wfh",
+  BUSINESS_TRIP: "trip",
+  PERMISSION: "permission",
+  ATTENDANCE_CORRECTION: "correction",
 }
 
-/** Labels and values from the type metadata, in the user's language and formats. */
-export function useRequestText() {
-  const locale = useLocale()
-  const format = useFormat()
+export const categoryOf = (type: string) => CATEGORIES[type] ?? ""
+
+/** Labels and values for requests, translated by key (the API's labels are English only). */
+export function useRequestText({
+  types,
+  leaveTypes,
+}: {
+  types: RequestType[]
+  leaveTypes: LeaveTypeName[]
+}) {
   const t = useTranslations("requests")
+  const format = useFormat()
 
-  const text = (value: Parameters<typeof localize>[0]) =>
-    localize(value, locale)
+  // Keys are dynamic: an unknown one falls back to what the API sent.
+  const known = (key: string) => t.has(key as never)
+  const tr = (key: string) => t(key as never)
 
-  function range({ from, to }: DateRange) {
-    return from === to ? format.day(from) : format.dayRange(from, to)
+  function typeLabel(key: string) {
+    if (known(`types.${key}.label`)) return tr(`types.${key}.label`)
+    return types.find((type) => type.key === key)?.label ?? key
   }
 
-  function value(field: FieldMeta, raw: FieldValue | undefined) {
+  function fieldLabel(name: string) {
+    return known(`fields.${name}`) ? tr(`fields.${name}`) : name
+  }
+
+  function value(field: TypeField, raw: unknown) {
     if (raw === null || raw === undefined || raw === "") return null
-    switch (field.type) {
-      case "date":
-        return format.day(raw as string)
-      case "date-range":
-        return range(raw as DateRange)
-      case "select": {
-        const option = field.options?.find((item) => item.value === raw)
-        return option ? text(option.label) : String(raw)
-      }
-      case "number":
-        return format.number(raw as number)
-      case "boolean":
-        return t(raw ? "yes" : "no")
-      default:
-        return String(raw)
-    }
+    const text = String(raw)
+    if (field.kind === "leaveType")
+      return leaveTypes.find((type) => type.id === text)?.name ?? text
+    if (field.kind === "choice" && known(`options.${text}`))
+      return tr(`options.${text}`)
+    return text
+  }
+
+  function days(request: Request) {
+    return request.startDate === request.endDate
+      ? format.day(request.startDate)
+      : format.dayRange(request.startDate, request.endDate)
+  }
+
+  /** "14:00–17:00", or "" when the type has no times. */
+  function times(request: Request) {
+    return [request.startTime, request.endTime].filter(Boolean).join("–")
   }
 
   return {
-    text,
-    typeLabel: (key: string) => {
-      const meta = requestType(key)
-      return meta ? text(meta.label) : key
-    },
+    typeLabel,
+    typeDescription: (key: string) =>
+      known(`types.${key}.description`) ? tr(`types.${key}.description`) : "",
+    fieldLabel,
     value,
-    /** "Leave · Annual leave": the type plus its select fields' values. */
-    title(request: MyRequest) {
-      const meta = requestType(request.type)
-      if (!meta) return request.type
-      const picks = meta.fields
-        .filter((field) => field.type === "select")
-        .map((field) => value(field, request.values[field.key]))
+    /** "Leave · Annual leave": the type plus its leave type. */
+    title(request: Request) {
+      const fields = types.find((type) => type.key === request.type)?.fields
+      const picks = (fields ?? [])
+        .filter((field) => field.kind === "leaveType")
+        .map((field) => value(field, request.data[field.name]))
         .filter(Boolean)
-      return [text(meta.label), ...picks].join(" · ")
+      return [typeLabel(request.type), ...picks].join(" · ")
     },
-    /** The days, plus a time window when the type has one ("Tue 13 Oct · 14:00–17:00"). */
-    when(request: MyRequest) {
-      const meta = requestType(request.type)
-      if (!meta) return ""
-      const span = requestSpan(meta, request.values)
-      const times = meta.fields
-        .filter((field) => field.type === "time")
-        .map((field) => request.values[field.key])
-        .filter((time): time is string => typeof time === "string" && !!time)
-      return [span ? range(span) : null, times.length ? times.join("–") : null]
-        .filter(Boolean)
-        .join(" · ")
+    days,
+    times,
+    /** The days, plus the time window when there is one ("Tue 13 Oct · 14:00–17:00"). */
+    when(request: Request) {
+      return [days(request), times(request)].filter(Boolean).join(" · ")
     },
   }
 }

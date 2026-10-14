@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { InfoIcon } from "lucide-react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useId, useState } from "react"
 import {
@@ -41,8 +41,8 @@ import {
   type FieldValue,
   type RequestTypeMeta,
 } from "./demo-data"
-import { useRequestText } from "./request-text"
 import {
+  localize,
   buildSchema,
   findLeaveConflict,
   initialValues,
@@ -53,10 +53,18 @@ import { submitRequest, today, useRequests } from "./store"
 
 type Form = UseFormReturn<RequestFormValues>
 
+// ponytail: demo labels until step 2 moves the form onto GET /requests/types.
+export function useDemoText() {
+  const locale = useLocale()
+  return {
+    text: (value: Parameters<typeof localize>[0]) => localize(value, locale),
+  }
+}
+
 /** patterns/request-form-renderer.md: one form for every request type, from its metadata. */
 export function RequestForm({ meta }: { meta: RequestTypeMeta }) {
   const t = useTranslations("requests.form")
-  const text = useRequestText()
+  const text = useDemoText()
   const unsupported = unsupportedFields(meta)
 
   useEffect(() => {
@@ -287,7 +295,7 @@ function RequestField({
 }) {
   const t = useTranslations()
   const format = useFormat()
-  const text = useRequestText()
+  const text = useDemoText()
   const label = field.required
     ? text.text(field.label)
     : t("requests.form.optional", { label: text.text(field.label) })

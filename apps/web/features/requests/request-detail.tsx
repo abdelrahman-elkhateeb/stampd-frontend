@@ -4,85 +4,100 @@ import { ArrowLeftIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
 
-import { ErrorPage } from "@/components/error-page"
 import { Status, useStatusLabel } from "@/components/status"
+import { useUser } from "@/components/user-provider"
 import { companyDate } from "@/features/attendance/rules"
 import { Link } from "@/i18n/navigation"
-import { DEMO_USER } from "@/lib/demo-user"
 import { useFormat } from "@/lib/use-format"
 import { Button } from "@workspace/ui/components/button"
 import { Card } from "@workspace/ui/components/card"
 import { CategoryChip } from "@workspace/ui/components/category-chip"
 import { ConfirmDialog } from "@workspace/ui/components/confirm-dialog"
-import { Skeleton, SkeletonGroup } from "@workspace/ui/components/skeleton"
 import { notify } from "@workspace/ui/components/sonner"
 import {
   StatusTimeline,
   type StatusEvent,
 } from "@workspace/ui/components/timeline"
 
-import type { MyRequest } from "./demo-data"
-import { requestType, useRequestText } from "./request-text"
-import { allowedActions, canView, type RequestAction } from "./rules"
-import { act, today, useRequests } from "./store"
+import { cancelRequest, requestCancellation, withdrawRequest } from "./actions"
+import type {
+  LeaveTypeName,
+  RequestDetail as Detail,
+  RequestType,
+} from "./request-data"
+import { categoryOf, useRequestText } from "./request-text"
+
+/** The actions this page offers; approving and rejecting live on Approvals (FE-10). */
+const ACTIONS = {
+  WITHDRAW: "withdraw",
+  REQUEST_CANCELLATION: "requestCancellation",
+  CANCEL: "adminCancel",
+} as const
+type Action = (typeof ACTIONS)[keyof typeof ACTIONS]
+
+const RUN = {
+  withdraw: withdrawRequest,
+  requestCancellation,
+  adminCancel: cancelRequest,
+}
+
+/** Someone acted first, or the request started meanwhile. */
+const STALE = ["REQUEST_STATUS_CONFLICT", "REQUEST_STARTED"]
 
 /** The shareable request page (/requests/:id), used by emails and notifications. */
-export function RequestDetail({ id }: { id: string }) {
+export function RequestDetail({
+  request,
+  types,
+  leaveTypes,
+}: {
+  request: Detail
+  types: RequestType[]
+  leaveTypes: LeaveTypeName[]
+}) {
   const t = useTranslations("requests")
-  const requests = useRequests()
-
-  if (!requests) {
-    return (
-      <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
-        <Skeleton className="h-10 w-2/3" />
-        <Skeleton className="h-48 rounded-lg" />
-        <Skeleton className="h-64 rounded-lg" />
-      </SkeletonGroup>
-    )
-  }
-  const request = requests.find((item) => item.id === id)
-  if (!request) return <ErrorPage kind="notFound" inShell />
-  // ponytail: the API answers 403 (BE-03); the demo decides here.
-  if (!canView(request, DEMO_USER))
-    return <ErrorPage kind="forbidden" inShell />
-  return <RequestView request={request} />
-}
-
-function useWhen() {
-  const format = useFormat()
-  return (iso: string) =>
-    `${format.day(companyDate(new Date(iso), DEMO_USER.company.timezone))} · ${format.time(iso)}`
-}
-
-function RequestView({ request }: { request: MyRequest }) {
-  const t = useTranslations("requests")
-  const text = useRequestText()
+  const text = useRequestText({ types, leaveTypes })
   const statusLabel = useStatusLabel()
-  const when = useWhen()
-  const meta = requestType(request.type)
-  const actions = allowedActions(request, meta, DEMO_USER, today())
-  const [confirming, setConfirming] = useState<RequestAction | null>(null)
+  const format = useFormat()
+  const user = useUser()
+  const [confirming, setConfirming] = useState<Action | null>(null)
+  const meta = types.find((type) => type.key === request.type)
+  const actions = request.actions.flatMap((action) =>
+    action in ACTIONS ? [ACTIONS[action as keyof typeof ACTIONS]] : []
+  )
   const typeName = text.typeLabel(request.type)
-  const approver = request.approver ?? t("hr")
-  const own = request.employeeId === DEMO_USER.id
+  const name = request.requester.name ?? ""
+  const own = request.requester.id === user.id
+  const hr = request.approverPolicy === "ADMIN_ONLY"
+  const approver = request.decision?.by.name ?? t(hr ? "hr" : "detail.manager")
+  const waitingFor = t(hr ? "hr" : "theManager")
+  const when = (iso: string) =>
+    `${format.day(companyDate(new Date(iso), user.company.timezone))} · ${format.time(iso)}`
 
-  const events: StatusEvent[] = request.events.map((event) => ({
-    id: event.id,
-    kind: event.kind,
-    title:
-      event.kind === "submitted"
-        ? t("timeline.submitted")
-        : statusLabel(event.kind),
-    actor: event.onBehalfOf
-      ? t("timeline.byOnBehalf", {
-          name: event.actor,
-          employee: event.onBehalfOf,
-        })
-      : t("timeline.by", { name: event.actor }),
-    at: when(event.at),
-    dateTime: event.at,
-    comment: event.comment,
-  }))
+  const events: StatusEvent[] = request.timeline.flatMap((entry, index) => {
+    if (!entry.status) return []
+    const submitted = entry.previousStatus === null
+    const actor =
+      entry.actor.type === "SYSTEM"
+        ? t("timeline.bySystem")
+        : t("timeline.by", { name: entry.actor.name ?? "" })
+    return [
+      {
+        id: String(index),
+        kind: submitted ? "submitted" : entry.status,
+        title: submitted ? t("timeline.submitted") : statusLabel(entry.status),
+        actor:
+          submitted && request.createdBy.id !== request.requester.id
+            ? t("timeline.byOnBehalf", {
+                name: request.createdBy.name ?? "",
+                employee: name,
+              })
+            : actor,
+        at: when(entry.at),
+        dateTime: entry.at,
+        comment: entry.reason ?? undefined,
+      },
+    ]
+  })
   if (request.status === "pending" || request.status === "cancel-requested") {
     events.push({
       id: "next",
@@ -91,10 +106,26 @@ function RequestView({ request }: { request: MyRequest }) {
         request.status === "pending"
           ? "timeline.waiting"
           : "timeline.waitingCancellation",
-        { approver }
+        { approver: waitingFor }
       ),
     })
   }
+
+  const rows: [string, string | null][] = [
+    [t("detail.employee"), name],
+    [t("detail.approver"), approver],
+    [
+      text.fieldLabel(meta?.dates === "SINGLE_DAY" ? "day" : "dates"),
+      text.days(request),
+    ],
+    ...(meta?.fields ?? []).map((field): [string, string | null] => [
+      text.fieldLabel(field.name),
+      text.value(field, request.data[field.name]),
+    ]),
+    [text.fieldLabel("reason"), request.reason],
+  ]
+  const time = text.times(request)
+  if (time) rows.splice(3, 0, [text.fieldLabel("time"), time])
 
   return (
     <div className="flex max-w-240 flex-col gap-6">
@@ -108,7 +139,7 @@ function RequestView({ request }: { request: MyRequest }) {
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <CategoryChip category={meta?.category ?? ""} label={typeName} />
+          <CategoryChip category={categoryOf(request.type)} label={typeName} />
           <Status status={request.status} />
         </div>
         <h1 className="text-h2 font-bold">{text.title(request)}</h1>
@@ -117,7 +148,7 @@ function RequestView({ request }: { request: MyRequest }) {
             text.when(request)
           ) : (
             <>
-              <bdi>{request.employeeName}</bdi> · {text.when(request)}
+              <bdi>{name}</bdi> · {text.when(request)}
             </>
           )}
         </p>
@@ -129,16 +160,10 @@ function RequestView({ request }: { request: MyRequest }) {
             {t("detail.summary")}
           </h2>
           <dl className="grid gap-4 p-card sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]">
-            <Row label={t("detail.employee")}>
-              <bdi>{request.employeeName}</bdi>
-            </Row>
-            <Row label={t("detail.approver")}>
-              <bdi>{approver}</bdi>
-            </Row>
-            {meta?.fields.map((field) => (
-              <Row key={field.key} label={text.text(field.label)}>
-                {text.value(field, request.values[field.key]) ? (
-                  <bdi>{text.value(field, request.values[field.key])}</bdi>
+            {rows.map(([label, value]) => (
+              <Row key={label} label={label}>
+                {value ? (
+                  <bdi>{value}</bdi>
                 ) : (
                   <>
                     <span aria-hidden>–</span>
@@ -180,39 +205,42 @@ function RequestView({ request }: { request: MyRequest }) {
         </Card>
       </div>
 
-      {(["withdraw", "requestCancellation", "adminCancel"] as const).map(
-        (action) => (
-          <ConfirmDialog
-            key={action}
-            open={confirming === action}
-            onOpenChange={(open) => !open && setConfirming(null)}
-            title={t(`actions.${action}.title`, {
-              type: typeName,
-              name: request.employeeName,
-            })}
-            description={t(`actions.${action}.description`, {
-              when: text.when(request),
-              approver,
-              name: request.employeeName,
-            })}
-            confirmLabel={t(`actions.${action}.confirm`)}
-            cancelLabel={t(`actions.${action}.keep`)}
-            requireInput={
-              action === "adminCancel"
-                ? {
-                    label: t("actions.adminCancel.reason"),
-                    errorMessage: t("actions.adminCancel.reasonRequired"),
-                  }
-                : undefined
+      {actions.map((action) => (
+        <ConfirmDialog
+          key={action}
+          open={confirming === action}
+          onOpenChange={(open) => !open && setConfirming(null)}
+          title={t(`actions.${action}.title`, { type: typeName, name })}
+          description={t(`actions.${action}.description`, {
+            when: text.when(request),
+            // Only on your own requests, at the start of a sentence.
+            approver: t(hr ? "hr" : "yourManager"),
+            name,
+          })}
+          confirmLabel={t(`actions.${action}.confirm`)}
+          cancelLabel={t(`actions.${action}.keep`)}
+          requireInput={
+            action === "adminCancel"
+              ? {
+                  label: t("actions.adminCancel.reason"),
+                  errorMessage: t("actions.adminCancel.reasonRequired"),
+                }
+              : undefined
+          }
+          errorMessage={t("actions.failed")}
+          onConfirm={async (reason) => {
+            const problem = await RUN[action](request.id, reason)
+            // Someone acted first: the refreshed page shows where it stands.
+            if (problem && STALE.includes(problem.code)) {
+              setConfirming(null)
+              notify.error(t("actions.conflict"))
+              return
             }
-            errorMessage={t("actions.failed")}
-            onConfirm={async (reason) => {
-              await act(request.id, action, reason?.trim() || undefined)
-              notify.success(t(`actions.${action}.done`))
-            }}
-          />
-        )
-      )}
+            if (problem) throw new Error(problem.code)
+            notify.success(t(`actions.${action}.done`))
+          }}
+        />
+      ))}
     </div>
   )
 }

@@ -933,7 +933,8 @@
       "employee": "الموظف",
       "approver": "المعتمِد",
       "none": "غير محدد",
-      "history": "سجل الطلب"
+      "history": "سجل الطلب",
+      "manager": "المدير"
     },
     "timeline": {
       "submitted": "أُرسل",
@@ -942,7 +943,8 @@
       "waiting": "بانتظار {approver}",
       "waitingCancellation": "بانتظار قرار {approver} بشأن الإلغاء",
       "nextStep": "الخطوة التالية",
-      "showAll": "عرض الكل ({count})"
+      "showAll": "عرض الكل ({count})",
+      "bySystem": "تلقائيًا"
     },
     "actions": {
       "failed": "لم ينجح ذلك. حاول مجددًا.",
@@ -971,7 +973,49 @@
         "reason": "السبب",
         "reasonRequired": "أضف سببًا ليعرف الموظف دواعي الإلغاء",
         "done": "تم إلغاء الطلب"
+      },
+      "conflict": "تغيّر هذا الطلب في الأثناء. هذه حالته الآن."
+    },
+    "theManager": "المدير",
+    "yourManager": "مديرك",
+    "types": {
+      "LEAVE": {
+        "label": "إجازة",
+        "description": "الإجازة السنوية والمرضية وغيرها"
+      },
+      "WFH": {
+        "label": "عمل عن بُعد",
+        "description": "العمل من المنزل ليوم أو بضعة أيام"
+      },
+      "ATTENDANCE_CORRECTION": {
+        "label": "تصحيح الحضور",
+        "description": "تصحيح تسجيل حضور أو انصراف فائت أو خاطئ"
+      },
+      "PERMISSION": {
+        "label": "استئذان",
+        "description": "المغادرة مبكرًا أو الخروج لبضع ساعات"
+      },
+      "BUSINESS_TRIP": {
+        "label": "رحلة عمل",
+        "description": "سفر لأغراض العمل"
       }
+    },
+    "fields": {
+      "dates": "التواريخ",
+      "day": "اليوم",
+      "time": "الوقت",
+      "reason": "السبب",
+      "destination": "الوجهة",
+      "purpose": "الغرض",
+      "checkInTime": "الحضور",
+      "checkOutTime": "الانصراف",
+      "leaveTypeId": "نوع الإجازة",
+      "firstDayHalf": "اليوم الأول",
+      "lastDayHalf": "اليوم الأخير"
+    },
+    "options": {
+      "MORNING": "الصباح فقط",
+      "AFTERNOON": "بعد الظهر فقط"
     }
   }
 }

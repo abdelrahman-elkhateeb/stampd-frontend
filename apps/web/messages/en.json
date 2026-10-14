@@ -933,7 +933,8 @@
       "employee": "Employee",
       "approver": "Approver",
       "none": "Not given",
-      "history": "Request history"
+      "history": "Request history",
+      "manager": "Manager"
     },
     "timeline": {
       "submitted": "Submitted",
@@ -942,7 +943,8 @@
       "waiting": "Waiting for {approver}",
       "waitingCancellation": "Waiting for {approver} to decide on the cancellation",
       "nextStep": "Next step",
-      "showAll": "Show all ({count})"
+      "showAll": "Show all ({count})",
+      "bySystem": "automatically"
     },
     "actions": {
       "failed": "That didn't work. Try again.",
@@ -971,7 +973,49 @@
         "reason": "Reason",
         "reasonRequired": "Add a reason so the employee knows why",
         "done": "Request cancelled"
+      },
+      "conflict": "This request changed in the meantime. Here's where it stands now."
+    },
+    "theManager": "the manager",
+    "yourManager": "Your manager",
+    "types": {
+      "LEAVE": {
+        "label": "Leave",
+        "description": "Annual, sick and other time off"
+      },
+      "WFH": {
+        "label": "Work from home",
+        "description": "Work from home for a day or a few days"
+      },
+      "ATTENDANCE_CORRECTION": {
+        "label": "Attendance correction",
+        "description": "Fix a missed or wrong check-in or check-out"
+      },
+      "PERMISSION": {
+        "label": "Permission",
+        "description": "Leave early or step out for a few hours"
+      },
+      "BUSINESS_TRIP": {
+        "label": "Business trip",
+        "description": "Travel for work"
       }
+    },
+    "fields": {
+      "dates": "Dates",
+      "day": "Day",
+      "time": "Time",
+      "reason": "Reason",
+      "destination": "Destination",
+      "purpose": "Purpose",
+      "checkInTime": "Check-in",
+      "checkOutTime": "Check-out",
+      "leaveTypeId": "Leave type",
+      "firstDayHalf": "First day",
+      "lastDayHalf": "Last day"
+    },
+    "options": {
+      "MORNING": "Morning only",
+      "AFTERNOON": "Afternoon only"
     }
   }
 }

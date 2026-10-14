@@ -1,19 +1,6 @@
 "use server"
 
-import { api, getMe } from "@/lib/api"
-import { ApiError, type Problem } from "@/lib/api-error"
-
-/** API errors come back as a Problem (success: undefined); redirects (401) still throw. */
-async function attempt(
-  call: () => Promise<unknown>
-): Promise<Problem | undefined> {
-  try {
-    await call()
-  } catch (error) {
-    if (!(error instanceof ApiError)) throw error
-    return { code: error.code, fieldErrors: error.fieldErrors }
-  }
-}
+import { api, attempt, getMe } from "@/lib/api"
 
 /** Other sessions end; this one stays signed in. */
 export async function changePassword(input: {

@@ -8,21 +8,14 @@ import {
   type RequestTypeMeta,
 } from "@/features/requests/demo-data"
 import {
-  allowedActions,
   buildSchema,
-  canView,
   findLeaveConflict,
-  queryRequests,
   unsupportedFields,
-  type RequestFilters,
 } from "@/features/requests/rules"
 
 const TODAY = "2026-10-11"
 const type = (key: string) => DEMO_REQUEST_TYPES.find((t) => t.key === key)!
 const requests = demoRequests(TODAY)
-const byId = (id: string) => requests.find((r) => r.id === id)!
-const employee = { id: "u-sara", role: "employee" as const }
-const admin = { id: "u-sara", role: "admin" as const }
 
 function errors(meta: RequestTypeMeta, values: object, isAdmin = false) {
   const result = buildSchema(meta, { today: TODAY, admin: isAdmin }).safeParse(
@@ -127,61 +120,5 @@ describe("findLeaveConflict", () => {
         { ...context, employeeId: "e-3" }
       )
     ).toBeNull()
-  })
-})
-
-describe("allowedActions", () => {
-  it("withdraws pending, cancels future approved, and nothing on decided", () => {
-    expect(allowedActions(byId("2041"), type("wfh"), employee, TODAY)).toEqual([
-      "withdraw",
-    ])
-    expect(
-      allowedActions(byId("2033"), type("leave"), employee, TODAY)
-    ).toEqual(["requestCancellation"])
-    expect(
-      allowedActions(byId("2027"), type("permission"), employee, TODAY)
-    ).toEqual([])
-  })
-
-  it("offers no cancel once approved leave has started, except to an admin", () => {
-    expect(
-      allowedActions(byId("2008"), type("leave"), employee, TODAY)
-    ).toEqual([])
-    expect(allowedActions(byId("2008"), type("leave"), admin, TODAY)).toEqual([
-      "adminCancel",
-    ])
-  })
-})
-
-describe("canView", () => {
-  it("hides other people's requests from everyone but admins", () => {
-    expect(canView(byId("1990"), employee)).toBe(false)
-    expect(canView(byId("1990"), { id: "u-sara", role: "manager" })).toBe(false)
-    expect(canView(byId("1990"), admin)).toBe(true)
-  })
-})
-
-describe("queryRequests", () => {
-  const all: RequestFilters = { types: [], statuses: [], from: null, to: null }
-
-  it("lists only mine, newest first", () => {
-    const ids = queryRequests(requests, DEMO_REQUEST_TYPES, "u-sara", all).map(
-      (r) => r.id
-    )
-    expect(ids).toEqual(["2041", "2008", "2027", "2033", "2019", "2012"])
-  })
-
-  it("filters by type, status and overlapping dates", () => {
-    const ids = (filters: Partial<typeof all>) =>
-      queryRequests(requests, DEMO_REQUEST_TYPES, "u-sara", {
-        ...all,
-        ...filters,
-      }).map((r) => r.id)
-    expect(ids({ types: ["wfh"] })).toEqual(["2041", "2012"])
-    expect(ids({ statuses: ["approved"] })).toEqual(["2008", "2033", "2019"])
-    expect(ids({ from: "2026-10-12", to: "2026-10-13" })).toEqual([
-      "2041",
-      "2008",
-    ])
   })
 })
