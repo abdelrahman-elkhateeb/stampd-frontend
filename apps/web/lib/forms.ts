@@ -21,6 +21,10 @@ export function issueToFieldCode(issue: z.core.$ZodRawIssue): FieldErrorCode {
 /** Pass to zodResolver / schema.parse so issue messages are codes. */
 export const codeErrorMap = { error: issueToFieldCode }
 
+/** { form: "api" } -> { api: "form" }, for showProblem's field map. */
+export const invert = (map: Record<string, string>) =>
+  Object.fromEntries(Object.entries(map).map(([key, value]) => [value, key]))
+
 /**
  * Puts an API problem on the form: each field error under its field (codes,
  * like Zod's), anything else as the form's root error. `fields` renames API

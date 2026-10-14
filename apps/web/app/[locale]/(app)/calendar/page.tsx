@@ -6,6 +6,7 @@ import { getToday } from "@/features/attendance/attendance-data"
 import { getCalendar } from "@/features/calendar/calendar-data"
 import { CalendarPage } from "@/features/calendar/calendar-page"
 import type { Locale } from "@/i18n/routing"
+import { isMonth } from "@/lib/format"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("calendar")
@@ -20,11 +21,7 @@ export default async function Page({
   const query = await searchParams
   const { date: today } = await getToday()
   const thisMonth = today.slice(0, 7)
-  const month =
-    typeof query.month === "string" &&
-    /^\d{4}-(0[1-9]|1[0-2])$/.test(query.month)
-      ? query.month
-      : thisMonth
+  const month = isMonth(query.month) ? query.month : thisMonth
   const { events, days } = await getCalendar(month, {
     pending: query.pending === "true",
     team: query.team === "true",

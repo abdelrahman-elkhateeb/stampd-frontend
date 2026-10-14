@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import { cn } from "@workspace/ui/lib/utils"
 
 import type { Report, ReportRow } from "./report-data"
@@ -197,26 +198,20 @@ export function ReportsPage({
         <h1 className="text-h2 font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
-      <div
-        role="tablist"
-        className="flex gap-1 overflow-x-auto overflow-y-hidden border-b"
+      <Tabs
+        value={view}
+        onValueChange={(id) =>
+          setState({ view: id as ViewId, page: null, year: null })
+        }
       >
-        {IDS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={view === id}
-            onClick={() => setState({ view: id, page: null, year: null })}
-            className={cn(
-              "-mb-px border-b-2 border-transparent px-3 py-2 text-body-sm font-semibold whitespace-nowrap text-muted-foreground",
-              view === id && "border-foreground text-foreground"
-            )}
-          >
-            {t(`views.${id}`)}
-          </button>
-        ))}
-      </div>
+        <TabsList>
+          {IDS.map((id) => (
+            <TabsTrigger key={id} value={id}>
+              {t(`views.${id}`)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       <div className="flex flex-wrap items-end gap-3">
         {byYear ? (

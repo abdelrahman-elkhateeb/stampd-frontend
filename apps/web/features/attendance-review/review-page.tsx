@@ -20,6 +20,7 @@ import { useFormat } from "@/lib/use-format"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import { EmptyState } from "@workspace/ui/components/empty-state"
 import { StatusBar } from "@workspace/ui/components/status-chip"
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import {
   Table,
   TableBody,
@@ -29,7 +30,6 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
-import { cn } from "@workspace/ui/lib/utils"
 
 import { CorrectionEditor } from "./correction-editor"
 import { TABS, type Tab } from "./tabs"
@@ -84,29 +84,25 @@ export function ReviewPage({
         <h1 className="text-h2 font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
-      <div
-        role="tablist"
-        className="flex gap-1 overflow-x-auto overflow-y-hidden border-b"
+      <Tabs
+        value={tab}
+        onValueChange={(id) =>
+          setQuery({ tab: id as Tab, employee: null, day: null })
+        }
       >
-        {TABS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => setQuery({ tab: id, employee: null, day: null })}
-            className={cn(
-              "-mb-px border-b-2 border-transparent px-3 py-2 text-body-sm font-semibold whitespace-nowrap text-muted-foreground",
-              tab === id && "border-foreground text-foreground"
-            )}
-          >
-            {t(`tabs.${id}`)}
-            {id === "corrections" && corrections.length
-              ? ` (${format.number(corrections.length)})`
-              : null}
-          </button>
-        ))}
-      </div>
+        <TabsList>
+          {TABS.map((id) => (
+            <TabsTrigger
+              key={id}
+              value={id}
+              count={id === "corrections" ? corrections.length : undefined}
+              attention
+            >
+              {t(`tabs.${id}`)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {tab === "day" ? (
         <>

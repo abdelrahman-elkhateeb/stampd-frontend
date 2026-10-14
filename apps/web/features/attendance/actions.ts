@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache"
 
-import { api, attempt } from "@/lib/api"
+import { api, attempt, mutate } from "@/lib/api"
 
 import type { ApiToday } from "./attendance-data"
 
@@ -30,22 +30,15 @@ export async function checkOut() {
 
 // ── HR corrections (FE-11): each change needs a reason, kept in the day's history ──
 
-async function correct(path: string, method: string, body: object) {
-  const problem = await attempt(() => api(path, { method, body }))
-  if (!problem) refresh()
-  return problem
-}
-
 export async function addSession(
   employeeId: string,
   date: string,
   body: { checkInAt: string; checkOutAt: string; reason: string }
 ) {
-  return correct(
-    `/attendance/employees/${employeeId}/days/${date}/sessions`,
-    "POST",
-    body
-  )
+  return mutate(`/attendance/employees/${employeeId}/days/${date}/sessions`, {
+    method: "POST",
+    body,
+  })
 }
 
 export async function editSession(
@@ -53,12 +46,15 @@ export async function editSession(
   body: { checkInAt: string; checkOutAt: string | null; reason: string }
 ) {
   const { checkOutAt, ...rest } = body
-  return correct(`/attendance/sessions/${id}`, "PATCH", {
-    ...rest,
-    ...(checkOutAt && { checkOutAt }),
+  return mutate(`/attendance/sessions/${id}`, {
+    method: "PATCH",
+    body: { ...rest, ...(checkOutAt && { checkOutAt }) },
   })
 }
 
 export async function removeSession(id: string, reason: string) {
-  return correct(`/attendance/sessions/${id}`, "DELETE", { reason })
+  return mutate(`/attendance/sessions/${id}`, {
+    method: "DELETE",
+    body: { reason },
+  })
 }

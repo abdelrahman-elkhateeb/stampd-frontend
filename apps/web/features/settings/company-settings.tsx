@@ -17,7 +17,7 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes"
 import { useUser } from "@/components/user-provider"
 import { getIntlLocale } from "@/i18n/locale"
 import type { Locale } from "@/i18n/routing"
-import { codeErrorMap, showProblem } from "@/lib/forms"
+import { codeErrorMap, invert, showProblem } from "@/lib/forms"
 import { useFormat } from "@/lib/use-format"
 import { toWeekday } from "@/lib/user"
 import { useTimeZones } from "@/lib/time-zones"
@@ -116,9 +116,7 @@ const valuesOf = (settings: CompanySettings): CompanyValues => ({
 })
 
 /** API field names back to form fields, for field errors. */
-const FORM_FIELDS = Object.fromEntries(
-  Object.entries(SETTINGS_FIELDS).map(([form, api]) => [api, form])
-)
+const FORM_FIELDS = invert(SETTINGS_FIELDS)
 
 export function CompanySettingsPage({
   settings,

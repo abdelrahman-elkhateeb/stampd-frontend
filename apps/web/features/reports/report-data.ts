@@ -1,4 +1,5 @@
 import { api } from "@/lib/api"
+import { one } from "@/lib/format"
 
 import { reportQuery, VIEWS, type ViewId } from "./views"
 
@@ -20,8 +21,8 @@ export async function getReport(
   query: Record<string, string | string[] | undefined>
 ) {
   const params = reportQuery(view, query)
-  const page = Number(Array.isArray(query.page) ? query.page[0] : query.page)
-  const size = Number(Array.isArray(query.size) ? query.size[0] : query.size)
+  const page = Number(one(query.page))
+  const size = Number(one(query.size))
   params.set("page", String(page > 0 ? page : 1))
   params.set("pageSize", String([10, 25, 50, 100].includes(size) ? size : 25))
   return api<Report>(`/reports/${VIEWS[view].path}?${params}`)

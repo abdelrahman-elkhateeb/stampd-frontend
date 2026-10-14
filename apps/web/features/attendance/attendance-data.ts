@@ -1,4 +1,5 @@
 import { api } from "@/lib/api"
+import { getHistory, type Change } from "@/lib/history"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import type {
   AttendanceStatus,
@@ -92,60 +93,39 @@ type ApiGrid = {
 const toGrid = ({ items }: ApiGrid): EmployeeDays[] =>
   items.map(({ employee, days }) => ({ employee, days: days.map(toDay) }))
 
-/** A month's days for the people the caller may see (self / team / company). */
-export async function getMonth(
-  month: string,
-  filters: Record<string, string | undefined> = {}
+type Filters = Record<string, string | undefined>
+
+// ponytail: first 100 people; page the grid when a company outgrows it.
+async function grid(
+  path: string,
+  base: Record<string, string>,
+  filters: Filters
 ) {
-  const params = new URLSearchParams({ month, pageSize: "100" })
+  const params = new URLSearchParams({ ...base, pageSize: "100" })
   for (const [key, value] of Object.entries(filters))
     if (value) params.set(key, value)
-  // ponytail: first 100 people; page the grid when a company outgrows it.
-  return toGrid(await api<ApiGrid>(`/attendance/month?${params}`))
+  return toGrid(await api<ApiGrid>(`/attendance/${path}?${params}`))
 }
+
+/** A month's days for the people the caller may see (self / team / company). */
+export const getMonth = (month: string, filters: Filters = {}) =>
+  grid("month", { month }, filters)
 
 /** One day for everyone the caller may see. */
-export async function getDays(
-  date: PlainDate,
-  filters: Record<string, string | undefined> = {}
-) {
-  const params = new URLSearchParams({ date, pageSize: "100" })
-  for (const [key, value] of Object.entries(filters))
-    if (value) params.set(key, value)
-  return toGrid(await api<ApiGrid>(`/attendance/days?${params}`))
-}
+export const getDays = (date: PlainDate, filters: Filters = {}) =>
+  grid("days", { date }, filters)
 
-type ApiHistoryEntry = {
-  id: string
-  action: string
-  at: string
-  actor: { type: "USER"; name?: string | null } | { type: "SYSTEM" }
-  source: "USER" | "APPROVAL" | "SYSTEM_JOB"
-  oldValues: Record<string, unknown> | null
-  newValues: Record<string, unknown> | null
-  reason: string | null
-}
-
-export type DayChange = {
-  id: string
-  action: string
-  at: string
-  actor: string | null
-  source: ApiHistoryEntry["source"]
-  before: DaySnapshot
-  after: DaySnapshot
-  reason: string | null
-}
+export type DayChange = Change & { before: DaySnapshot; after: DaySnapshot }
 
 type DaySnapshot = {
   sessions?: Session[]
   status?: AttendanceStatus | null
 }
 
-const snapshot = (values: Record<string, unknown> | null): DaySnapshot => ({
-  sessions: (values?.sessions as ApiSession[] | undefined)?.map(toSession),
+const snapshot = (values: Record<string, unknown>): DaySnapshot => ({
+  sessions: (values.sessions as ApiSession[] | undefined)?.map(toSession),
   status:
-    values && "status" in values
+    "status" in values
       ? toAttendanceStatus(values.status as ApiAttendanceStatus | null)
       : undefined,
 })
@@ -168,9 +148,7 @@ export async function getDayDetail(
     sessions: ApiSession[]
   }>(`/attendance/employees/${employeeId}/days/${date}`)
   const history = detail.day.recordId
-    ? await api<{ items: ApiHistoryEntry[] }>(
-        `/history/attendance-days/${detail.day.recordId}?pageSize=100`
-      ).then(({ items }) => items)
+    ? await getHistory("attendance-days", detail.day.recordId)
     : []
   return {
     employee: detail.employee,
@@ -180,14 +158,9 @@ export async function getDayDetail(
       ...toSession(session),
     })),
     history: history.map((entry) => ({
-      id: entry.id,
-      action: entry.action,
-      at: entry.at,
-      actor: entry.actor.type === "USER" ? (entry.actor.name ?? null) : null,
-      source: entry.source,
+      ...entry,
       before: snapshot(entry.oldValues),
       after: snapshot(entry.newValues),
-      reason: entry.reason,
     })),
   }
 }

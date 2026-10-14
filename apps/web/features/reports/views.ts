@@ -1,3 +1,5 @@
+import { one } from "@/lib/format"
+
 /** The six report views (BE-14), by URL id. Plain module: the route and the page both read it. */
 export const VIEWS = {
   attendanceSummary: { path: "attendance/summary", range: "dates" },
@@ -22,22 +24,19 @@ export function reportQuery(
   view: ViewId,
   query: Record<string, string | string[] | undefined>
 ) {
-  const one = (key: string) => {
-    const value = query[key]
-    return Array.isArray(value) ? value[0] : value
-  }
+  const get = (key: string) => one(query[key])
   const params = new URLSearchParams()
   if (VIEWS[view].range === "year") {
-    const year = Number(one("year"))
+    const year = Number(get("year"))
     if (year >= 2000 && year <= 2100) params.set("year", String(year))
   } else {
-    const from = one("from")
-    const to = one("to")
+    const from = get("from")
+    const to = get("to")
     if (from && to && PLAIN_DATE.test(from) && PLAIN_DATE.test(to)) {
       params.set("from", from)
       params.set("to", to)
     } else {
-      const preset = one("preset")
+      const preset = get("preset")
       params.set(
         "preset",
         (PRESETS as readonly string[]).includes(preset ?? "")

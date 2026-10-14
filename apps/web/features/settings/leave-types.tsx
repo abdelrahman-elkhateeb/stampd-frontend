@@ -19,7 +19,7 @@ import {
   TextField,
   useFieldError,
 } from "@/components/form-fields"
-import { codeErrorMap, showProblem } from "@/lib/forms"
+import { codeErrorMap, invert, showProblem } from "@/lib/forms"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Card } from "@workspace/ui/components/card"
@@ -96,9 +96,7 @@ const API_FIELDS = {
   reasonRequired: "requiresReason",
 } as const satisfies Record<keyof LeaveTypeInput, string>
 
-const FORM_FIELDS = Object.fromEntries(
-  Object.entries(API_FIELDS).map(([form, api]) => [api, form])
-)
+const FORM_FIELDS = invert(API_FIELDS)
 
 export function LeaveTypesPage({ types }: { types: LeaveType[] }) {
   const t = useTranslations("settings.leaveTypes")

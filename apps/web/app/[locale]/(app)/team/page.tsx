@@ -11,15 +11,12 @@ import {
 import { TeamPage } from "@/features/team/team-page"
 import type { Locale } from "@/i18n/routing"
 import { getMe } from "@/lib/api"
-import { isPlainDate } from "@/lib/format"
+import { isMonth, isPlainDate, one } from "@/lib/format"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("team")
   return { title: t("title") }
 }
-
-const one = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 
 export default async function Page({
   params,
@@ -29,10 +26,7 @@ export default async function Page({
   const query = await searchParams
   const [me, today] = await Promise.all([getMe(), getToday()])
   const asked = one(query.month)
-  const month =
-    asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked)
-      ? asked
-      : today.date.slice(0, 7)
+  const month = isMonth(asked) ? asked : today.date.slice(0, 7)
   const employee = one(query.employee)
   const day = one(query.day)
   const [grid, detail] = await Promise.all([

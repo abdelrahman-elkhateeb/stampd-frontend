@@ -77,7 +77,7 @@ const HolidayBody = z.object({
 type HolidayInput = { dates: DateRangeValue | null; name: string }
 
 /** Each day of each holiday, for the date pickers. */
-export function holidayDays(holidays: HolidayItem[]): Holiday[] {
+function holidayDays(holidays: HolidayItem[]): Holiday[] {
   return holidays.flatMap((holiday) => {
     const days: Holiday[] = []
     for (

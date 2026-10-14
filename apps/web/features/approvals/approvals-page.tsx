@@ -12,10 +12,11 @@ import type {
   RequestType,
 } from "@/features/requests/request-data"
 import { categoryOf, useRequestText } from "@/features/requests/request-text"
-import { Link } from "@/i18n/navigation"
+import { Link, useRouter } from "@/i18n/navigation"
 import { PersonAvatar } from "@workspace/ui/components/avatar"
 import { CategoryIcon } from "@workspace/ui/components/category-chip"
 import { EmptyState } from "@workspace/ui/components/empty-state"
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
 import { cn } from "@workspace/ui/lib/utils"
 
 type Tab = "pending" | "decided"
@@ -40,6 +41,7 @@ export function ApprovalsPage({
 }) {
   const t = useTranslations("approvals")
   const text = useRequestText({ types, leaveTypes })
+  const router = useRouter()
   const href = (next: { tab?: Tab; request?: string }) => {
     const params = new URLSearchParams()
     if ((next.tab ?? tab) === "decided") params.set("tab", "decided")
@@ -59,22 +61,18 @@ export function ApprovalsPage({
           aria-label={t("listLabel")}
           className={cn("flex flex-col gap-3", open && "max-lg:hidden")}
         >
-          <div role="tablist" className="flex gap-1 border-b">
-            {(["pending", "decided"] as const).map((id) => (
-              <Link
-                key={id}
-                role="tab"
-                aria-selected={tab === id}
-                href={href({ tab: id })}
-                className={cn(
-                  "-mb-px border-b-2 border-transparent px-3 py-2 text-body-sm font-semibold text-muted-foreground",
-                  tab === id && "border-foreground text-foreground"
-                )}
-              >
-                {t(`tabs.${id}`)}
-              </Link>
-            ))}
-          </div>
+          <Tabs
+            value={tab}
+            onValueChange={(id) => router.replace(href({ tab: id as Tab }))}
+          >
+            <TabsList>
+              {(["pending", "decided"] as const).map((id) => (
+                <TabsTrigger key={id} value={id}>
+                  {t(`tabs.${id}`)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
           {requests.length ? (
             <>
               <p className="text-body-sm text-muted-foreground">

@@ -2,14 +2,7 @@
 
 import { refresh } from "next/cache"
 
-import { api, attempt } from "@/lib/api"
-
-/** Every write re-renders the page, so it shows what the server now has. */
-async function write(path: string, init: { method: string; body?: unknown }) {
-  const problem = await attempt(() => api(path, init))
-  if (!problem) refresh()
-  return problem
-}
+import { api, attempt, mutate } from "@/lib/api"
 
 export type EmployeeBody = {
   name: string
@@ -24,15 +17,15 @@ export type EmployeeBody = {
 
 /** A new employee is invited by email at once (BE-06). */
 export async function createEmployee(body: EmployeeBody) {
-  return write("/employees", { method: "POST", body })
+  return mutate("/employees", { method: "POST", body })
 }
 
 export async function updateEmployee(id: string, body: Partial<EmployeeBody>) {
-  return write(`/employees/${id}`, { method: "PATCH", body })
+  return mutate(`/employees/${id}`, { method: "PATCH", body })
 }
 
 export async function resendInvite(id: string) {
-  return write(`/employees/${id}/invitation`, { method: "POST" })
+  return mutate(`/employees/${id}/invitation`, { method: "POST" })
 }
 
 export type DeactivationImpact = {
@@ -59,11 +52,11 @@ export async function deactivate(
   id: string,
   body: { lastWorkingDay: string; reassignReportsTo?: string }
 ) {
-  return write(`/employees/${id}/deactivation`, { method: "POST", body })
+  return mutate(`/employees/${id}/deactivation`, { method: "POST", body })
 }
 
 export async function reactivate(id: string) {
-  return write(`/employees/${id}/reactivation`, { method: "POST" })
+  return mutate(`/employees/${id}/reactivation`, { method: "POST" })
 }
 
 /** ± days with a required reason; the ledger records it. */
@@ -72,14 +65,14 @@ export async function adjustBalance(
   leaveTypeId: string,
   body: { days: number; reason: string }
 ) {
-  return write(
+  return mutate(
     `/leave/employees/${employeeId}/balances/${leaveTypeId}/adjustments`,
     { method: "POST", body }
   )
 }
 
 export async function saveDepartment(name: string, id?: string) {
-  return write(id ? `/departments/${id}` : "/departments", {
+  return mutate(id ? `/departments/${id}` : "/departments", {
     method: id ? "PATCH" : "POST",
     body: { name },
   })
@@ -87,7 +80,7 @@ export async function saveDepartment(name: string, id?: string) {
 
 /** 409 DEPARTMENT_NOT_EMPTY while anyone is in it. */
 export async function deleteDepartment(id: string) {
-  return write(`/departments/${id}`, { method: "DELETE" })
+  return mutate(`/departments/${id}`, { method: "DELETE" })
 }
 
 export type ImportOutcome = {

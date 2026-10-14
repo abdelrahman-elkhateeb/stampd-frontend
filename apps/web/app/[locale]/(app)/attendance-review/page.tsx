@@ -14,15 +14,12 @@ import { ReviewPage } from "@/features/attendance-review/review-page"
 import { TABS, type Tab } from "@/features/attendance-review/tabs"
 import { getApprovals } from "@/features/requests/request-data"
 import type { Locale } from "@/i18n/routing"
-import { isPlainDate } from "@/lib/format"
+import { isMonth, isPlainDate, one } from "@/lib/format"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("attendanceReview")
   return { title: t("title") }
 }
-
-const one = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 
 export default async function Page({
   params,
@@ -40,10 +37,7 @@ export default async function Page({
       ? askedDate
       : today.date
   const askedMonth = one(query.month)
-  const month =
-    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth)
-      ? askedMonth
-      : today.date.slice(0, 7)
+  const month = isMonth(askedMonth) ? askedMonth : today.date.slice(0, 7)
   const employee = one(query.employee)
   const day = one(query.day)
   const [grid, exceptions, pending, detail] = await Promise.all([

@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server"
 
 import { getCompanySettings } from "@/features/settings/settings-data"
-import { isPlainDate } from "@/lib/format"
+import { isMonth, isPlainDate, one } from "@/lib/format"
 import { getMe } from "@/lib/api"
 
 import { getDayDetail, getMonth, getToday } from "./attendance-data"
@@ -11,9 +11,6 @@ import { TodayCard } from "./today-card"
 
 /** How far back the month picker goes. */
 const HISTORY_MONTHS = 12
-
-const one = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 
 /** Server component: reads today, the month on screen and the open day. */
 export async function AttendancePage({
@@ -31,10 +28,7 @@ export async function AttendancePage({
   const firstMonth = addMonths(thisMonth, -HISTORY_MONTHS)
   const asked = one(searchParams.month)
   const month =
-    asked &&
-    /^\d{4}-\d{2}$/.test(asked) &&
-    asked >= firstMonth &&
-    asked < thisMonth
+    isMonth(asked) && asked >= firstMonth && asked < thisMonth
       ? asked
       : thisMonth
   const day = one(searchParams.day)

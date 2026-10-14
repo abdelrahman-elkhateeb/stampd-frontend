@@ -1,4 +1,5 @@
 import { api } from "@/lib/api"
+import { getHistory, type Change } from "@/lib/history"
 import { toWeekday } from "@/lib/user"
 import type { LeaveIconKey } from "@workspace/ui/components/icon-picker"
 import type { PlainDate, Weekday } from "@workspace/ui/components/date-picker"
@@ -55,43 +56,13 @@ export async function getCompanySettings() {
   return toCompanySettings(await api<ApiCompanySettings>("/company/settings"))
 }
 
-type ApiHistoryEntry = {
-  id: string
-  action: string
-  at: string
-  actor: { type: "USER"; name: string | null } | { type: "SYSTEM" }
-  oldValues: Record<string, unknown> | null
-  newValues: Record<string, unknown> | null
-}
+export type SettingsChange = Change
 
-export type SettingsChange = {
-  id: string
-  actor: string | null
-  at: string
-  /** API field names (workStartTime, …) with their old and new values. */
-  fields: { field: string; from: unknown; to: unknown }[]
-}
-
-/** Admin only: changes to the company settings, newest first. */
-export async function getSettingsHistory(
-  companyId: string
-): Promise<SettingsChange[]> {
-  // ponytail: the latest 100 changes; page it when someone needs older ones.
-  const { items } = await api<{ items: ApiHistoryEntry[] }>(
-    `/history/company-settings/${companyId}?pageSize=100`
+/** Admin: changes to the company settings, newest first. */
+export async function getSettingsHistory(companyId: string) {
+  return (await getHistory("company-settings", companyId)).filter(
+    (entry) => entry.action === "companySettings.changed"
   )
-  return items
-    .filter((entry) => entry.action === "companySettings.changed")
-    .map((entry) => ({
-      id: entry.id,
-      actor: entry.actor.type === "USER" ? entry.actor.name : null,
-      at: entry.at,
-      fields: Object.keys(entry.newValues ?? {}).map((field) => ({
-        field,
-        from: entry.oldValues?.[field],
-        to: entry.newValues?.[field],
-      })),
-    }))
 }
 
 export type HolidayItem = {

@@ -17,6 +17,14 @@ function clean(text: string) {
   return text.replace(/[\u2009\u202f\u00a0]/g, " ")
 }
 
+/** A search param's first value (Next gives a string, an array or nothing). */
+export const one = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value
+
+/** "YYYY-MM". */
+export const isMonth = (value: unknown): value is string =>
+  typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value)
+
 const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 export function isPlainDate(value: string): value is PlainDate {

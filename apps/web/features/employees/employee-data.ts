@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation"
 import { z } from "zod"
 
+import { one } from "@/lib/format"
 import { api } from "@/lib/api"
+import { getHistory, type Change } from "@/lib/history"
 import { toRole, type MeResponse, type Role } from "@/lib/user"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import type { LeaveIconKey } from "@workspace/ui/components/icon-picker"
@@ -78,9 +80,6 @@ export async function getDepartments() {
 
 /** The list's URL (?q=&dept=&status=&sort=&page=&size=), as the page receives it. */
 export type EmployeeSearchParams = Record<string, string | string[] | undefined>
-
-const one = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 
 /** GET /employees with the list's filters; the server searches, sorts and pages. */
 export async function getEmployees(query: EmployeeSearchParams) {
@@ -211,42 +210,8 @@ export async function getLedger(
   }))
 }
 
-export type EmployeeChange = {
-  id: string
-  action: string
-  actor: string | null
-  at: string
-  fields: { field: string; from: unknown; to: unknown }[]
-  reason: string | null
-}
+export type EmployeeChange = Change
 
-type ApiHistoryEntry = {
-  id: string
-  action: string
-  at: string
-  actor: { type: "USER"; name: string | null } | { type: "SYSTEM" }
-  oldValues: Record<string, unknown> | null
-  newValues: Record<string, unknown> | null
-  reason: string | null
-}
-
-/** The employee record's changes, newest first. ponytail: latest 100. */
-export async function getEmployeeHistory(
-  employeeId: string
-): Promise<EmployeeChange[]> {
-  const { items } = await api<{ items: ApiHistoryEntry[] }>(
-    `/history/employees/${employeeId}?pageSize=100`
-  )
-  return items.map((entry) => ({
-    id: entry.id,
-    action: entry.action,
-    actor: entry.actor.type === "USER" ? entry.actor.name : null,
-    at: entry.at,
-    fields: Object.keys(entry.newValues ?? {}).map((field) => ({
-      field,
-      from: entry.oldValues?.[field],
-      to: entry.newValues?.[field],
-    })),
-    reason: entry.reason,
-  }))
-}
+/** The employee record's changes, newest first. */
+export const getEmployeeHistory = (employeeId: string) =>
+  getHistory("employees", employeeId)

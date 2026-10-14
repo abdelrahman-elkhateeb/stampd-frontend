@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation"
 import { z } from "zod"
 
+import { getLeaveTypes } from "@/features/settings/settings-data"
 import { api } from "@/lib/api"
-import { isPlainDate } from "@/lib/format"
+import { isPlainDate, one } from "@/lib/format"
 import type { PlainDate } from "@workspace/ui/components/date-picker"
 import {
   REQUEST_STATUSES,
@@ -103,10 +104,7 @@ export async function getRequestTypes() {
 
 /** Names for leave requests' `leaveTypeId`, archived ones included. */
 export async function getLeaveTypeNames(): Promise<LeaveTypeName[]> {
-  const { items } = await api<{ items: LeaveTypeName[] }>(
-    "/leave/types?includeArchived=true"
-  )
-  return items.map(({ id, name }) => ({ id, name }))
+  return (await getLeaveTypes()).map(({ id, name }) => ({ id, name }))
 }
 
 /** The list filters as the URL has them (nuqs: comma-separated arrays). */
@@ -117,8 +115,6 @@ export type RequestQuery = {
   to?: string | string[]
 }
 
-const one = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 const list = (value: string | string[] | undefined) =>
   (one(value) ?? "").split(",").filter(Boolean)
 

@@ -1,4 +1,5 @@
 import { headers, cookies } from "next/headers"
+import { refresh } from "next/cache"
 import { notFound } from "next/navigation"
 import { getLocale } from "next-intl/server"
 import { cache } from "react"
@@ -70,6 +71,16 @@ export async function attempt(
     if (!(error instanceof ApiError)) throw error
     return { code: error.code, fieldErrors: error.fieldErrors }
   }
+}
+
+/** A server action's write: the page re-renders on success, so it shows what the server has. */
+export async function mutate(
+  path: string,
+  init: { method: string; body?: unknown }
+) {
+  const problem = await attempt(() => api(path, init))
+  if (!problem) refresh()
+  return problem
 }
 
 /** The signed-in user; one API call per request however many components ask. */
