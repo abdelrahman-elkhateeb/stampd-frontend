@@ -2,32 +2,62 @@
 
 Web frontend for **Stampd**, the Employee Ops Platform: attendance, leave, requests and approvals for GCC teams, in English and Arabic (full RTL).
 
-**Status:** Platform, shared components and the data layer (FE-01a, FE-01c, FE-01b) are in: login and sessions run against [stampd-backend](../stampd-backend), and the shell shows the signed-in user. Most screens still run on demo data (`features/<area>/demo-data.ts`) until they are wired to the API; `docs/backend-integration.md` lists what each one calls. Work is tracked on the Trello board "Employee Ops Platform" (FE-01 … FE-15).
+Every screen reads from and writes to [stampd-backend](https://github.com/abdelrahman-elkhateeb/stampd-backend). There is no mock layer: sign-in, sessions, and all reads and writes are real API calls. The only exception is the dev-only component gallery.
 
-## Layout
+![Dashboard](docs/screenshots/dashboard-light.png)
 
-| Path | What |
+## Screenshots
+
+| | |
 |---|---|
-| `docs/design-system/` | The Stampd design system: principles, decisions, component and pattern specs, and the ticket → component map (`backlog-map.md`). Start with its `README.md` |
-| `apps/web` | Next.js app (App Router) |
-| `apps/web/app/[locale]` | Every route lives under `/en` or `/ar` |
-| `apps/web/i18n`, `apps/web/messages` | Locale routing (next-intl) and the English/Arabic message catalogs |
-| `apps/web/features/<feature>` | Feature code (auth, attendance, leave, …). Route files in `app/` stay thin |
-| `apps/web/lib` | App plumbing: API client and session, formatting, forms, table URL state, demo data |
-| `packages/ui` | Shared UI: shadcn/ui (Radix), `src/styles/tokens.css` (source of truth for tokens) and `src/styles/globals.css` (Tailwind v4 entry) |
-| `packages/eslint-config`, `packages/typescript-config` | Shared lint and TS settings |
+| ![Attendance calendar, light](docs/screenshots/attendance-calendar-light.png) | ![Attendance list, dark](docs/screenshots/attendance-list-dark.png) |
+| Attendance: check in and the month as a calendar | The same history as a list, in dark mode |
+| ![Attendance in Arabic, dark](docs/screenshots/attendance-ar-dark.png) | ![Leave, dark](docs/screenshots/leave-dark.png) |
+| Arabic, full RTL | Leave balances and requests |
+| ![Company settings, dark](docs/screenshots/settings-dark.png) | ![Reports, light](docs/screenshots/reports-light.png) |
+| Company settings: profile, logo and work calendar | Reports with CSV export |
+| ![Profile, dark](docs/screenshots/profile-dark.png) | |
+| Profile: photo, phone and password | |
 
-## Stack
+## What's in it
 
-Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui (`radix-nova`, Radix primitives) · lucide-react · next-themes · next-intl · nuqs · react-hook-form + Zod · Vitest + Testing Library · Playwright · Turborepo · pnpm.
+| Area | Route | Who |
+|---|---|---|
+| Sign in, sign up, accept invite, forgot / reset password | `/login`, `/signup`, `/invite`, `/forgot-password`, `/reset-password` | Everyone |
+| Dashboard (employee, manager and admin views) | `/` | Every signed-in user |
+| Attendance: check in / out, today, monthly history | `/attendance` | Every signed-in user |
+| Leave: balances, history, new request with live preview | `/leave`, `/leave/new` | Every signed-in user |
+| Requests: list, detail, new request, withdraw / cancel | `/requests` | Every signed-in user |
+| Company calendar and availability | `/calendar` | Every signed-in user |
+| Profile: details, photo, phone, password, theme | `/me` | Every signed-in user |
+| Approvals queue | `/approvals` | Manager, admin |
+| My team | `/team` | Manager, admin |
+| Employees, departments, balances, CSV import | `/employees` | Admin |
+| HR attendance review and corrections | `/attendance-review` | Admin |
+| Reports and CSV export | `/reports` | Admin |
+| Company settings, holidays, leave types, request types | `/settings` | Admin |
 
-Fonts: Plus Jakarta Sans (Latin), IBM Plex Sans Arabic, IBM Plex Mono, loaded with `next/font`.
+**Not built yet:** in-app notifications (FE-15). They wait on BE-15 in the backend. Until then the bell shows no count, and invite and reset links show up in the backend log rather than in email.
 
-The stack decisions and their reasons are on the FE-01 card in Trello.
+`docs/backend-integration.md` lists which endpoints each screen calls, plus the known simplifications (each marked `ponytail:` in the code). Work is tracked on the Trello board "Employee Ops Platform" (FE-01 … FE-15).
 
 ## Getting started
 
 Requires Node ≥ 20.9 and pnpm 11 (`corepack enable`, or `npx pnpm@11.25.0 …`).
+
+**1. Run the backend.** Clone [stampd-backend](https://github.com/abdelrahman-elkhateeb/stampd-backend) next to this repo and follow its README. In short:
+
+```bash
+pnpm install && cp .env.example .env
+```
+
+```bash
+docker compose up -d && pnpm db:setup && pnpm dev
+```
+
+That starts MongoDB, seeds a sample company and serves the API on <http://localhost:4000>.
+
+**2. Run the frontend.**
 
 ```bash
 pnpm install
@@ -41,10 +71,11 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm dev
 ```
 
-The app needs stampd-backend running on `API_BASE_URL` (see its README: `pnpm db:setup && pnpm dev`). Open <http://localhost:3000>: you're sent to `/en` or `/ar` based on your browser language, then to login. Seeded accounts: `admin@`, `manager@`, `employee@demo.stampd.app`, password `demo-password`.
+Open <http://localhost:3000>. You're sent to `/en` or `/ar` based on your browser language, then to login.
 
-Dev-only pages (on locally and on previews, 404 in production):
-- `/en/dev/gallery`: every shared component in its states, with theme, density and language switches. No login needed.
+**Seeded accounts** (from the backend's seed, one per role): `admin@demo.stampd.app`, `manager@demo.stampd.app`, `employee@demo.stampd.app`, all with password `demo-password`. The manager manages the employee.
+
+Dev-only page (available locally and on previews, 404 in production): `/en/dev/gallery` shows every shared component in each state, with theme, density and language switches. It needs no login and renders with a sample user (`lib/demo-user.ts`).
 
 ### Scripts (from the repo root)
 
@@ -55,13 +86,51 @@ Dev-only pages (on locally and on previews, 404 in production):
 | `pnpm lint` | ESLint; fails on any warning |
 | `pnpm typecheck` | Generates route types, then `tsc` |
 | `pnpm test` | Unit and component tests (Vitest) |
-| `pnpm test:e2e` | Builds, then runs Playwright against `next start` (locale routing, sign-in redirect and login form, RTL, 360px, axe WCAG AA in both themes). No backend needed, so it doesn't log in |
+| `pnpm test:e2e` | Builds, then runs Playwright against `next start`: locale routing, sign-in redirect and login form, RTL, 360px, axe WCAG AA in both themes. It needs no backend, so it doesn't sign in |
 
 Before the first `test:e2e`, install the browser once: `pnpm --filter web exec playwright install chromium`.
 
 ### Environment variables
 
-See `apps/web/.env.example`. `NEXT_PUBLIC_APP_ENV`: `production` hides `/dev/*`. `API_BASE_URL`: stampd-backend, called only from the Next server. `NEXT_PUBLIC_*` variables are inlined into the browser bundle, so never put secrets there.
+See `apps/web/.env.example`.
+
+| Variable | What |
+|---|---|
+| `API_BASE_URL` | stampd-backend's URL. Only the Next server calls it |
+| `NEXT_PUBLIC_APP_ENV` | `local`, `preview`, `staging` or `production`. `production` hides `/dev/*` |
+
+`NEXT_PUBLIC_*` variables are inlined into the browser bundle, so never put secrets there.
+
+## Stack
+
+Next.js 16 · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui (`radix-nova`, Radix primitives) · lucide-react · next-themes · next-intl · nuqs · react-hook-form + Zod · Vitest + Testing Library · Playwright · Turborepo · pnpm.
+
+Fonts: Plus Jakarta Sans (Latin), IBM Plex Sans Arabic and IBM Plex Mono, loaded with `next/font`. The reasons for each stack choice are on the FE-01 card in Trello.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `apps/web` | Next.js app (App Router) |
+| `apps/web/app/[locale]` | Every route lives under `/en` or `/ar`. Route files stay thin |
+| `apps/web/features/<area>` | Feature code: components, server reads (`<area>-data.ts`) and server actions (`actions.ts`) |
+| `apps/web/components` | App shell, status chips, pickers, form fields |
+| `apps/web/lib` | App plumbing: API client, session, access rules, formatting, forms, table URL state |
+| `apps/web/i18n`, `apps/web/messages` | Locale routing (next-intl) and the English and Arabic message catalogs |
+| `apps/web/tests`, `apps/web/e2e` | Vitest tests (mirroring source paths) and Playwright smoke tests |
+| `packages/ui` | Shared UI: shadcn/ui (Radix), `src/styles/tokens.css` (the source of truth for tokens) and `src/styles/globals.css` (Tailwind v4 entry) |
+| `packages/eslint-config`, `packages/typescript-config` | Shared lint and TS settings |
+| `docs/design-system/` | The Stampd design system: principles, decisions, component and pattern specs, and the ticket → component map (`backlog-map.md`). Start with its `README.md` |
+| `docs/backend-integration.md` | Screen → endpoint map, data-layer pattern, known simplifications and backend gaps |
+| `FRONTEND_API.md` | Full API reference for the frontend: shapes, enums, error codes |
+
+## Sessions and API calls
+
+- **Next.js is the BFF.** The browser never talks to the API. Auth server actions (`features/auth/actions.ts`) keep the tokens in httpOnly cookies (`lib/session.ts`). Server code calls the API with `api()` (`lib/api.ts`), which adds the Bearer token.
+- **`proxy.ts`** refreshes an access token that has under 60 s left (the new cookies apply to the same render). It sends signed-out visitors to `/login?returnTo=…`, sends signed-in users away from login and signup, and shows the no-access page for routes the user's role can't open (`lib/access.ts`). It calls `GET /me` only on those restricted routes, because the token carries no role.
+- **The user.** `getMe()` on the server (once per request) and `useUser()` in client components (provided by `(app)/layout.tsx`). API shapes are mapped in `lib/user.ts` (`ADMIN` → `admin`, `"SUN"` → `0`).
+- **Per feature.** `<area>-data.ts` holds the server reads and maps the API's shape to the app's once. `actions.ts` holds the server actions: each returns a `Problem` or `undefined` and calls `refresh()`. Filters, month, tab and the open item live in the URL (nuqs, `shallow: false`).
+- **Errors.** In `api()`, a 401 goes to login. On GETs, a 404 shows the not-found page and a 403 shows the no-access page. Anything else throws `ApiError`, which carries `code`, `fieldErrors` and the request id (shown as the support code).
 
 ## Languages and RTL
 
@@ -73,19 +142,31 @@ See `apps/web/.env.example`. `NEXT_PUBLIC_APP_ENV`: `production` hides `/dev/*`.
 
 ## Forms and dates
 
-- **Forms.** react-hook-form + a Zod schema with `codeErrorMap`, so errors are codes translated under the field (`lib/forms.ts`, `components/form-fields.tsx`).
+- **Forms.** react-hook-form with a Zod schema and `codeErrorMap`, so errors are codes, translated under the field (`lib/forms.ts`, `components/form-fields.tsx`). API field errors land on the same fields.
 - **Dates.** Use `lib/format.ts` (or `useFormat()` in client components). Plain dates (`YYYY-MM-DD`) are formatted in UTC and never shift a day.
 
-## Components (FE-01c)
+## Components
 
-Shared components live in `packages/ui/src/components`, styled to `docs/design-system/components/*.md`. Always import `cn` from `@workspace/ui/lib/utils`: it knows the Stampd theme, so classes like `text-ui` don't silently drop text colours. The app adds translations on top: `components/status.tsx` (status chips), `components/pickers.tsx` (date, range and time fields using the company calendar), `lib/use-table-url-state.ts` (table state in the URL) and `lib/use-table-labels.ts`.
+Shared components live in `packages/ui/src/components`, styled to `docs/design-system/components/*.md`. Always import `cn` from `@workspace/ui/lib/utils`: it knows the Stampd theme, so classes like `text-ui` don't silently drop text colours. The app adds translations on top: `components/status.tsx` (status chips), `components/pickers.tsx` (date, range and time fields that use the company calendar), `lib/use-table-url-state.ts` (table state in the URL) and `lib/use-table-labels.ts`.
 
-## Sessions and API calls (FE-01b)
+### Adding shadcn components
 
-- **Next.js is the BFF.** The browser never talks to the API. Auth server actions (`features/auth/actions.ts`) keep the tokens in httpOnly cookies (`lib/session.ts`); server code calls the API with `api()` (`lib/api.ts`), which adds the Bearer token.
-- **`proxy.ts`** refreshes an access token with under 60 s left (new cookies apply to the same render), sends signed-out visitors to `/login?returnTo=…`, sends signed-in users away from login/signup, and shows the no-access page for routes the role can't open (`lib/access.ts`; it asks `GET /me` only on those routes, since the token carries no role).
-- **The user.** `getMe()` (server, once per request) and `useUser()` (client, from `(app)/layout.tsx`). API shapes are mapped in `lib/user.ts` (`ADMIN` → `admin`, `"SUN"` → `0`).
-- **Errors.** In `api()`, a 401 goes to login. On GETs, a 404 shows the not-found page and a 403 the no-access page. Anything else throws `ApiError` (`code`, `fieldErrors`, and the request id as the support code).
+**Rule: shadcn first.** Before building anything for a new feature (a component, a sub-part such as menu radio items, or a behaviour such as theming), check whether shadcn already has it ([components](https://ui.shadcn.com/docs/components), [dark mode](https://ui.shadcn.com/docs/dark-mode/next)) and what is already in `packages/ui/src/components`. If shadcn has it, add it with the CLI and restyle it. Write it by hand only when shadcn has nothing for it, and say why in the PR.
+
+From the repo root:
+
+```bash
+pnpm dlx shadcn@latest add dialog -c apps/web
+```
+
+Components land in `packages/ui/src/components` and pick up the Stampd tokens automatically. Restyle them to the specs in `docs/design-system/components/`.
+
+## Rules that lint enforces
+
+- **Logical properties only** (`ms-`, `pe-`, `start-`, `border-s`, `text-start`). Physical classes such as `ml-2` or `text-left` fail lint, so layouts flip correctly in RTL.
+- **No unused code.** TypeScript `noUnusedLocals` / `noUnusedParameters`.
+
+The other rules (tokens only, never colour alone, one hero per screen, …) are in `docs/design-system/README.md`.
 
 ## Error pages
 
@@ -99,26 +180,7 @@ Shared components live in `packages/ui/src/components`, styled to `docs/design-s
 
 GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck, unit tests, build and the Playwright smoke tests on every pull request and on `main`.
 
-Preview deploys run on Vercel: connect the repo in Vercel with **Root Directory** `apps/web`, then set `NEXT_PUBLIC_APP_ENV` for Preview and Production. Vercel then posts a preview link on every pull request.
-
-## Adding shadcn components
-
-**Rule: shadcn first.** Before building anything for a new feature (a component, a sub-part such as menu radio items, or a behaviour such as theming), check whether shadcn already has it ([components](https://ui.shadcn.com/docs/components), [dark mode](https://ui.shadcn.com/docs/dark-mode/next)) and what is already in `packages/ui/src/components`. If shadcn has it, add it with the CLI and restyle it; write it by hand only when shadcn has nothing for it, and say why in the PR.
-
-From the repo root:
-
-```bash
-pnpm dlx shadcn@latest add dialog -c apps/web
-```
-
-They land in `packages/ui/src/components` and pick up Stampd tokens automatically. Restyle them to the specs in `docs/design-system/components/`.
-
-## Rules that lint enforces
-
-- **Logical properties only** (`ms-`, `pe-`, `start-`, `border-s`, `text-start`). Physical classes such as `ml-2` or `text-left` fail lint, so layouts flip in RTL.
-- **No unused code.** TypeScript `noUnusedLocals` / `noUnusedParameters`.
-
-The rest of the rules (only tokens, never colour alone, one hero per screen, …) are in `docs/design-system/README.md`.
+Preview deploys run on Vercel: connect the repo with **Root Directory** `apps/web`, then set `API_BASE_URL` and `NEXT_PUBLIC_APP_ENV` for Preview and Production. Vercel then posts a preview link on every pull request.
 
 ## Known setup notes
 
